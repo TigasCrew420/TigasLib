@@ -12,9 +12,9 @@ local Theme = {
 	Primary   = Color3.fromRGB(0,247,255),
 	Secondary = Color3.fromRGB(148,0,255),
 	Accent    = Color3.fromRGB(255,0,140),
-	Background= Color3.fromRGB(12,12,18),
+	Background= Color3.fromRGB(14,14,22),
 	Card      = Color3.fromRGB(22,22,34),
-	Surface   = Color3.fromRGB(30,30,46),
+	Surface   = Color3.fromRGB(32,32,48),
 	Text      = Color3.fromRGB(245,245,255),
 	SubText   = Color3.fromRGB(178,186,210),
 	Success   = Color3.fromRGB(0,255,162),
@@ -24,24 +24,19 @@ local Theme = {
 
 local function C(c,p) local o=Instance.new(c) for k,v in pairs(p)do o[k]=v end return o end
 local function T(o,p,t,s) local i=TweenInfo.new(t or .35,s or Enum.EasingStyle.Quart,Enum.EasingDirection.Out) local tw=TweenService:Create(o,i,p) tw:Play() return tw end
-local function Glass(f,th,int) int=int or .88 local s=C("UIStroke",{Parent=f,Color=Color3.new(1,1,1),Transparency=int,Thickness=1.25,ApplyStrokeMode=Enum.ApplyStrokeMode.Border})
-	C("UIGradient",{Parent=s,Rotation=45,Color=ColorSequence.new({ColorSequenceKeypoint.new(0,th.Primary),ColorSequenceKeypoint.new(.5,th.Accent),ColorSequenceKeypoint.new(1,th.Secondary)})})
-end
-local function Shadow(parent,size,alpha)
-	local sh=C("ImageLabel",{Parent=parent,BackgroundTransparency=1,Image="rbxassetid://5028857084",ScaleType=Enum.ScaleType.Slice,SliceCenter=Rect.new(24,24,276,276),ImageTransparency=alpha or .2,Size=size or UDim2.new(1,24,1,24),Position=UDim2.fromOffset(-12,-12),ZIndex=0})
-	return sh
-end
+local function Glass(f,th,int) int=int or .88 local s=C("UIStroke",{Parent=f,Color=Color3.new(1,1,1),Transparency=int,Thickness=1.25,ApplyStrokeMode=Enum.ApplyStrokeMode.Border}); C("UIGradient",{Parent=s,Rotation=45,Color=ColorSequence.new({ColorSequenceKeypoint.new(0,th.Primary),ColorSequenceKeypoint.new(.5,th.Accent),ColorSequenceKeypoint.new(1,th.Secondary)})}) end
+local function Shadow(p,size,alpha) return C("ImageLabel",{Parent=p,BackgroundTransparency=1,Image="rbxassetid://5028857084",ScaleType=Enum.ScaleType.Slice,SliceCenter=Rect.new(24,24,276,276),ImageTransparency=alpha or .22,Size=size or UDim2.new(1,24,1,24),Position=UDim2.fromOffset(-12,-12),ZIndex=0}) end
 
 local function Splash(screen, text, color)
 	local overlay=C("Frame",{Parent=screen,Size=UDim2.new(1,0,1,0),BackgroundColor3=Color3.new(0,0,0),BackgroundTransparency=1,ZIndex=9999})
-	local glow=C("ImageLabel",{Parent=overlay,AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),BackgroundTransparency=1,Image="rbxassetid://5028857084",ImageTransparency=1,ScaleType=Enum.ScaleType.Slice,SliceCenter=Rect.new(24,24,276,276),Size=UDim2.fromOffset(420,120),ZIndex=10000})
-	local label=C("TextLabel",{Parent=overlay,AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),BackgroundTransparency=1,Text=text or "TigasLib",TextSize=44,Font=Enum.Font.GothamBlack,TextTransparency=1,TextColor3=color or Theme.Primary,ZIndex=10001})
-	T(overlay,{BackgroundTransparency=.1},.12)
-	T(glow,{ImageTransparency=.2,Size=UDim2.fromOffset(520,180)},.3,Enum.EasingStyle.Quad)
+	local ring=C("ImageLabel",{Parent=overlay,AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),BackgroundTransparency=1,Image="rbxassetid://9429094331",ImageColor3=color or Theme.Primary,ImageTransparency=1,Size=UDim2.fromOffset(24,24),ZIndex=10000})
+	local label=C("TextLabel",{Parent=overlay,AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),BackgroundTransparency=1,Text=text or "TigasLib",TextSize=40,Font=Enum.Font.GothamBlack,TextTransparency=1,TextColor3=color or Theme.Primary,ZIndex=10001})
+	T(overlay,{BackgroundTransparency=.1},.1)
+	T(ring,{ImageTransparency=0,Size=UDim2.fromOffset(460,460)},.45,Enum.EasingStyle.Quad)
 	T(label,{TextTransparency=0},.25)
-	task.wait(.55)
-	T(label,{TextTransparency=1},.2)
-	T(glow,{ImageTransparency=1},.2)
+	task.wait(.4)
+	T(label,{TextTransparency=1},.18)
+	T(ring,{ImageTransparency=1},.22)
 	T(overlay,{BackgroundTransparency=1},.2)
 	task.wait(.2)
 	overlay:Destroy()
@@ -63,164 +58,155 @@ function TigasLib:CreateWindow(opts)
 	local th = opts.Theme or Theme
 	local keybind = opts.ToggleKey or Enum.KeyCode.K
 
-	local screen=C("ScreenGui",{Name="TigasLib",ResetOnSpawn=false,DisplayOrder=20,IgnoreGuiInset=true,Parent=Player:WaitForChild("PlayerGui")})
+	local screen=C("ScreenGui",{Name="TigasLib",ResetOnSpawn=false,DisplayOrder=60,IgnoreGuiInset=true,Parent=Player:WaitForChild("PlayerGui")})
 	if opts.AcrylicBlur ~= false then C("BlurEffect",{Name="TL_Blur",Size=10,Parent=screen}) end
 
-	local main=C("Frame",{Parent=screen,Name="Main",Size=UDim2.fromOffset((opts.Size and opts.Size.X.Offset) or 620,(opts.Size and opts.Size.Y.Offset) or 520),
-		Position=opts.Position or UDim2.new(.5,-310,.5,-260),BackgroundColor3=th.Background,BackgroundTransparency=opts.Transparency or .06,BorderSizePixel=0})
-	C("UICorner",{Parent=main,CornerRadius=UDim.new(0,14)}); Glass(main,th,.82); Pulse(main,th); Shadow(main,nil,.22)
+	local main=C("Frame",{Parent=screen,Name="Main",Size=UDim2.fromOffset((opts.Size and opts.Size.X.Offset) or 720,(opts.Size and opts.Size.Y.Offset) or 540),
+		Position=opts.Position or UDim2.new(.5,-360,.5,-270),BackgroundColor3=th.Background,BackgroundTransparency=opts.Transparency or .06,BorderSizePixel=0,ClipsDescendants=true})
+	C("UICorner",{Parent=main,CornerRadius=UDim.new(0,12)}); Glass(main,th,.82); Pulse(main,th); Shadow(main,nil,.2)
 
 	local bg=C("Frame",{Parent=main,Size=UDim2.new(1,0,1,0),BackgroundTransparency=1})
-	local bgGrad=C("UIGradient",{Parent=bg,Rotation=0,Color=ColorSequence.new(Color3.fromRGB(14,14,28),Color3.fromRGB(18,18,34),Color3.fromRGB(14,14,28)),
-		Transparency=NumberSequence.new(NumberSequenceKeypoint.new(0,.84),NumberSequenceKeypoint.new(1,.92))})
+	local bgGrad=C("UIGradient",{Parent=bg,Rotation=0,Color=ColorSequence.new(Color3.fromRGB(17,17,30),Color3.fromRGB(20,20,37),Color3.fromRGB(17,17,30)),
+		Transparency=NumberSequence.new(NumberSequenceKeypoint.new(0,.86),NumberSequenceKeypoint.new(1,.93))})
 	task.spawn(function() while bg.Parent do for i=0,360,2 do bgGrad.Rotation=i; RunService.RenderStepped:Wait() end end end)
 
-	local top=C("Frame",{Parent=main,Name="TopBar",Size=UDim2.new(1,0,0,50),BackgroundColor3=th.Surface,BackgroundTransparency=.35})
-	C("UICorner",{Parent=top,CornerRadius=UDim.new(0,14)}); Glass(top,th,.7)
+	local top=C("Frame",{Parent=main,Name="TopBar",Size=UDim2.new(1,0,0,50),BackgroundColor3=th.Surface,BackgroundTransparency=.32})
+	C("UICorner",{Parent=top,CornerRadius=UDim.new(0,12)}); Glass(top,th,.7)
 	C("UIGradient",{Parent=top,Rotation=90,Color=ColorSequence.new(th.Primary,th.Accent,th.Secondary,th.Primary),
-		Transparency=NumberSequence.new(NumberSequenceKeypoint.new(0,.74),NumberSequenceKeypoint.new(1,.9))})
+		Transparency=NumberSequence.new(NumberSequenceKeypoint.new(0,.74),NumberSequenceKeypoint.new(1,.92))})
 
-	local titleWrap=C("Frame",{Parent=top,Size=UDim2.new(.7,0,1,0),Position=UDim2.fromOffset(16,0),BackgroundTransparency=1})
+	local titleWrap=C("Frame",{Parent=top,Size=UDim2.new(.6,0,1,0),Position=UDim2.fromOffset(14,0),BackgroundTransparency=1})
 	local title=C("TextLabel",{Parent=titleWrap,Size=UDim2.new(1,0,.6,0),Position=UDim2.fromScale(0,.2),BackgroundTransparency=1,Text=tostring(opts.Name or "TigasLib"),
 		TextColor3=th.Text,TextSize=20,Font=Enum.Font.GothamBold,TextXAlignment=Enum.TextXAlignment.Left})
-	C("TextLabel",{Parent=titleWrap,Size=UDim2.new(1,0,.4,0),Position=UDim2.fromScale(0,.6),BackgroundTransparency=1,Text="Futuristic UI",TextColor3=th.SubText,TextSize=12,Font=Enum.Font.Gotham,TextXAlignment=Enum.TextXAlignment.Left})
+	C("TextLabel",{Parent=titleWrap,Size=UDim2.new(1,0,.4,0),Position=UDim2.fromScale(0,.6),BackgroundTransparency=1,Text="Futuristic UI",
+		TextColor3=th.SubText,TextSize=12,Font=Enum.Font.Gotham,TextXAlignment=Enum.TextXAlignment.Left})
 
-	local controls=C("Frame",{Parent=top,Size=UDim2.new(.3,0,1,0),Position=UDim2.new(.7,0,0,0),BackgroundTransparency=1})
-	local minBtn=C("TextButton",{Parent=controls,Size=UDim2.fromOffset(30,30),Position=UDim2.new(.25,0,.5,-15),BackgroundColor3=th.Warning,BackgroundTransparency=.3,Text="_",TextSize=16,Font=Enum.Font.GothamBold,TextColor3=Color3.new(1,1,1)})
-	local closeBtn=C("TextButton",{Parent=controls,Size=UDim2.fromOffset(30,30),Position=UDim2.new(.65,0,.5,-15),BackgroundColor3=th.Error,BackgroundTransparency=.3,Text="×",TextSize=20,Font=Enum.Font.GothamBold,TextColor3=Color3.new(1,1,1)})
+	local controls=C("Frame",{Parent=top,Size=UDim2.new(.4,0,1,0),Position=UDim2.new(.6,0,0,0),BackgroundTransparency=1})
+	local minBtn=C("TextButton",{Parent=controls,Size=UDim2.fromOffset(30,30),Position=UDim2.new(.5,-40,.5,-15),BackgroundColor3=th.Warning,BackgroundTransparency=.3,Text="_",TextSize=16,Font=Enum.Font.GothamBold,TextColor3=Color3.new(1,1,1)})
+	local closeBtn=C("TextButton",{Parent=controls,Size=UDim2.fromOffset(30,30),Position=UDim2.new(.5,10,.5,-15),BackgroundColor3=th.Error,BackgroundTransparency=.3,Text="×",TextSize=20,Font=Enum.Font.GothamBold,TextColor3=Color3.new(1,1,1)})
 	C("UICorner",{Parent=minBtn,CornerRadius=UDim.new(1,0)}); C("UICorner",{Parent=closeBtn,CornerRadius=UDim.new(1,0)}); Glass(minBtn,th); Glass(closeBtn,th)
 
-	local tabBar=C("Frame",{Parent=main,Name="TabBar",BackgroundTransparency=1,Size=UDim2.new(1,-20,0,36),Position=UDim2.fromOffset(10,58)})
-	local tabList=C("UIListLayout",{Parent=tabBar,FillDirection=Enum.FillDirection.Horizontal,Padding=UDim.new(0,8),VerticalAlignment=Enum.VerticalAlignment.Center})
-	local pages=C("Folder",{Parent=main,Name="Pages"})
+	local navBar=C("Frame",{Parent=main,BackgroundTransparency=1,Size=UDim2.new(1,-20,0,38),Position=UDim2.fromOffset(10,56)})
+	local navList=C("UIListLayout",{Parent=navBar,FillDirection=Enum.FillDirection.Horizontal,Padding=UDim.new(0,8),VerticalAlignment=Enum.VerticalAlignment.Center})
+	local navPadding=C("UIPadding",{Parent=navBar,PaddingLeft=UDim.new(0,0),PaddingRight=UDim.new(0,0)})
 
-	local contentShadow=Shadow(main,UDim2.new(1,24,1,24),.28)
-	contentShadow.ZIndex=0
+	local sep=C("Frame",{Parent=main,Size=UDim2.new(1,-20,0,1),Position=UDim2.fromOffset(10,56+38+4),BackgroundColor3=Color3.fromRGB(255,255,255),BackgroundTransparency=.85,BorderSizePixel=0})
+	local sepGrad=C("UIGradient",{Parent=sep,Rotation=0,Color=ColorSequence.new(th.Primary,th.Secondary)})
+
+	local pageFrame=C("Frame",{Parent=main,Name="PageFrame",BackgroundTransparency=1,Size=UDim2.new(1,-20,1,-(50+38+14)),Position=UDim2.fromOffset(10,50+38+10)})
+	local pagesFolder=C("Folder",{Parent=pageFrame,Name="Pages"})
+	local currentTab=nil
+
+	local function hover(b) b.MouseEnter:Connect(function() T(b,{BackgroundTransparency=.08,Size=UDim2.fromOffset(32,32)},.14) end) b.MouseLeave:Connect(function() T(b,{BackgroundTransparency=.3,Size=UDim2.fromOffset(30,30)},.14) end) end
+	hover(minBtn); hover(closeBtn)
 
 	local dragging,dragInput,dragStart,startPos
-	top.InputBegan:Connect(function(i)
-		if i.UserInputType==Enum.UserInputType.MouseButton1 then dragging=true; dragStart=i.Position; startPos=main.Position
-			i.Changed:Connect(function() if i.UserInputState==Enum.UserInputState.End then dragging=false end end)
-		end
-	end)
+	top.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then dragging=true; dragStart=i.Position; startPos=main.Position i.Changed:Connect(function() if i.UserInputState==Enum.UserInputState.End then dragging=false end end) end end)
 	top.InputChanged:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseMovement then dragInput=i end end)
-	UserInputService.InputChanged:Connect(function(i)
-		if i==dragInput and dragging then local d=i.Position-dragStart
-			main.Position=UDim2.new(startPos.X.Scale,startPos.X.Offset+d.X,startPos.Y.Scale,startPos.Y.Offset+d.Y) end
-	end)
-
-	local function hover(b) b.MouseEnter:Connect(function() T(b,{BackgroundTransparency=.08,Size=UDim2.fromOffset(32,32)},.16) end)
-		b.MouseLeave:Connect(function() T(b,{BackgroundTransparency=.3,Size=UDim2.fromOffset(30,30)},.16) end) end
-	hover(minBtn); hover(closeBtn)
+	UserInputService.InputChanged:Connect(function(i) if i==dragInput and dragging then local d=i.Position-dragStart main.Position=UDim2.new(startPos.X.Scale,startPos.X.Offset+d.X,startPos.Y.Scale,startPos.Y.Offset+d.Y) end end)
 
 	local minimized=false
 	minBtn.MouseButton1Click:Connect(function()
 		minimized=not minimized
 		if minimized then
-			T(main,{Size=UDim2.fromOffset(main.Size.X.Offset,50)},.25)
-			for _,p in ipairs(pages:GetChildren()) do p.Visible=false end
+			T(main,{Size=UDim2.fromOffset(main.Size.X.Offset,50)},.22)
+			pageFrame.Visible=false
 		else
-			T(main,{Size=UDim2.fromOffset((opts.Size and opts.Size.X.Offset) or 620,(opts.Size and opts.Size.Y.Offset) or 520)},.25,Enum.EasingStyle.Back)
-			for _,p in ipairs(pages:GetChildren()) do if p:GetAttribute("Active") then p.Visible=true end end
+			T(main,{Size=UDim2.fromOffset((opts.Size and opts.Size.X.Offset) or 720,(opts.Size and opts.Size.Y.Offset) or 540)},.25,Enum.EasingStyle.Back)
+			pageFrame.Visible=true
 		end
 	end)
+
+	closeBtn.MouseButton1Click:Connect(function()
+		T(main,{Size=UDim2.fromOffset(0,0),Position=UDim2.new(.5,0,.5,0)},.22)
+		task.wait(.22)
+		screen:Destroy()
+	end)
+
+	task.spawn(function()
+		Splash(screen,"TigasLib",th.Primary)
+		main.Size=UDim2.fromOffset(math.floor(main.Size.X.Offset*0.86),math.floor(main.Size.Y.Offset*0.86))
+		main.Position=UDim2.new(.5,-(main.Size.X.Offset/2),.5,-(main.Size.Y.Offset/2)+12)
+		main.BackgroundTransparency=(opts.Transparency or .06)+.18
+		T(main,{Size=UDim2.fromOffset((opts.Size and opts.Size.X.Offset) or 720,(opts.Size and opts.Size.Y.Offset) or 540)},.34,Enum.EasingStyle.Back)
+		T(main,{Position=opts.Position or UDim2.new(.5,-360,.5,-270)},.34)
+		T(main,{BackgroundTransparency=opts.Transparency or .06},.34)
+	end)
+
+	task.delay(300,function() pcall(function() StarterGui:SetCore("SendNotification",{Title="Enjoying TigasLib?",Text="Tap to dismiss.",Duration=6}) end) end)
 
 	local visible=true
 	local function toggleVisibility(force)
 		if force~=nil then visible=force end
 		if visible then
 			main.Visible=true
-			main.BackgroundTransparency=(opts.Transparency or .06)+.2
-			main.Size=UDim2.fromOffset(math.floor(main.Size.X.Offset*0.92),math.floor(main.Size.Y.Offset*0.92))
-			T(main,{BackgroundTransparency=opts.Transparency or .06},.22)
-			T(main,{Size=UDim2.fromOffset((opts.Size and opts.Size.X.Offset) or 620,(opts.Size and opts.Size.Y.Offset) or 520),Position=opts.Position or UDim2.new(.5,-310,.5,-260)},.28,Enum.EasingStyle.Back)
+			main.BackgroundTransparency=(opts.Transparency or .06)+.22
+			main.Size=UDim2.fromOffset(math.floor(main.Size.X.Offset*0.9),math.floor(main.Size.Y.Offset*0.9))
+			T(main,{BackgroundTransparency=opts.Transparency or .06},.2)
+			T(main,{Size=UDim2.fromOffset((opts.Size and opts.Size.X.Offset) or 720,(opts.Size and opts.Size.Y.Offset) or 540),Position=opts.Position or UDim2.new(.5,-360,.5,-270)},.25,Enum.EasingStyle.Back)
 		else
-			T(main,{BackgroundTransparency=1},.18)
-			T(main,{Size=UDim2.fromOffset(math.floor(main.Size.X.Offset*0.96),math.floor(main.Size.Y.Offset*0.96)),Position=UDim2.new(.5,-300,.5,-248)},.18)
-			task.delay(.18,function() main.Visible=false end)
+			T(main,{BackgroundTransparency=1},.16)
+			T(main,{Size=UDim2.fromOffset(math.floor(main.Size.X.Offset*0.96),math.floor(main.Size.Y.Offset*0.96)),Position=UDim2.new(.5,-352,.5,-262)},.16)
+			task.delay(.16,function() main.Visible=false end)
 		end
 	end
+	UserInputService.InputBegan:Connect(function(i) if i.KeyCode==keybind and not i:IsModifierKeyDown() then visible=not visible; toggleVisibility() end end)
 
-	UserInputService.InputBegan:Connect(function(i)
-		if i.KeyCode==keybind and not i:IsModifierKeyDown() then visible=not visible; toggleVisibility() end
-	end)
-
-	closeBtn.MouseButton1Click:Connect(function()
-		T(main,{Size=UDim2.fromOffset(0,0),Position=UDim2.new(.5,0,.5,0)},.25)
-		task.wait(.25)
-		screen:Destroy()
-	end)
-
-	task.spawn(function()
-		Splash(screen, "TigasLib", th.Primary)
-		main.Size=UDim2.fromOffset(math.floor(main.Size.X.Offset*0.88),math.floor(main.Size.Y.Offset*0.88))
-		main.Position=UDim2.new(.5,-(main.Size.X.Offset/2),.5,-(main.Size.Y.Offset/2)+10)
-		main.BackgroundTransparency=(opts.Transparency or .06)+.18
-		T(main,{Size=UDim2.fromOffset((opts.Size and opts.Size.X.Offset) or 620,(opts.Size and opts.Size.Y.Offset) or 520)},.32,Enum.EasingStyle.Back)
-		T(main,{Position=opts.Position or UDim2.new(.5,-310,.5,-260)},.32)
-		T(main,{BackgroundTransparency=opts.Transparency or .06},.32)
-	end)
-
-	task.delay(300,function()
-		pcall(function()
-			StarterGui:SetCore("SendNotification",{Title="Enjoying TigasLib?",Text="Tap to dismiss.",Duration=6})
-		end)
-	end)
-
-	local currentTab=nil
-	local tabs={}
 	local function makeTabButton(text)
-		local wrap=C("Frame",{Parent=tabBar,BackgroundColor3=th.Card,BackgroundTransparency=.2,Size=UDim2.fromOffset(120,32)})
+		local wrap=C("Frame",{Parent=navBar,BackgroundColor3=th.Card,BackgroundTransparency=.18,Size=UDim2.fromOffset(122,34)})
 		C("UICorner",{Parent=wrap,CornerRadius=UDim.new(0,8)})
 		Glass(wrap,th,.86)
+		local hl=C("Frame",{Parent=wrap,Size=UDim2.new(0,0,0,2),Position=UDim2.new(0,0,1,0),BackgroundColor3=th.Primary,BackgroundTransparency=.2,BorderSizePixel=0})
 		local btn=C("TextButton",{Parent=wrap,BackgroundTransparency=1,Size=UDim2.new(1,0,1,0),Text=text,TextColor3=th.Text,TextSize=14,Font=Enum.Font.GothamSemibold})
-		btn.MouseEnter:Connect(function() T(wrap,{BackgroundColor3=th.Surface,BackgroundTransparency=.08},.14); T(btn,{TextColor3=th.Primary},.14) end)
-		btn.MouseLeave:Connect(function() T(wrap,{BackgroundColor3=th.Card,BackgroundTransparency=.2},.14); T(btn,{TextColor3=th.Text},.14) end)
-		return wrap,btn
+		btn.MouseEnter:Connect(function() T(wrap,{BackgroundColor3=th.Surface,BackgroundTransparency=.06},.12); T(btn,{TextColor3=th.Primary},.12) end)
+		btn.MouseLeave:Connect(function() if wrap:GetAttribute("Active") then return end T(wrap,{BackgroundColor3=th.Card,BackgroundTransparency=.18},.12); T(btn,{TextColor3=th.Text},.12) end)
+		return wrap,btn,hl
 	end
 
 	local function createPage(name)
-		local page=C("ScrollingFrame",{Parent=pages,Name=name.."_Page",Visible=false,ClipsDescendants=true,BackgroundTransparency=1,Size=UDim2.new(1,-20,1,-(50+36+20)),Position=UDim2.fromOffset(10,50+36+10),CanvasSize=UDim2.new(0,0,0,0),ScrollBarThickness=4,ScrollBarImageColor3=th.Primary,ScrollBarImageTransparency=.7})
+		local page=C("ScrollingFrame",{Parent=pagesFolder,Name=name.."_Page",Visible=false,ClipsDescendants=true,BackgroundTransparency=1,Size=UDim2.new(1,0,1,0),CanvasSize=UDim2.new(0,0,0,0),ScrollBarThickness=4,ScrollBarImageColor3=th.Primary,ScrollBarImageTransparency=.72})
 		local list=C("UIListLayout",{Parent=page,Padding=UDim.new(0,12)})
 		list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() page.CanvasSize=UDim2.new(0,0,0,list.AbsoluteContentSize.Y+20) end)
 		return page
 	end
 
 	local api=setmetatable({
-		ScreenGui=screen, Main=main, Theme=th, _Keybind=keybind,
-		SetToggleKey=function(self, key) keybind=key or Enum.KeyCode.K end,
-		CreateTab=function(self, name)
-			local wrap,btn=makeTabButton(tostring(name or "Tab"))
-			local page=createPage(name or "Tab"); tabs[name]=page
-			btn.MouseButton1Click:Connect(function()
-				for _,p in ipairs(pages:GetChildren()) do p.Visible=false; p:SetAttribute("Active",false) end
-				page.Visible=true; page:SetAttribute("Active",true)
-				page.Position=UDim2.fromOffset(10,50+36+16); page.Size=UDim2.new(1,-20,1,-(50+36+32))
-				T(page,{Position=UDim2.fromOffset(10,50+36+10),Size=UDim2.new(1,-20,1,-(50+36+20))},.18)
-				currentTab=page
-			end)
-			if not currentTab then btn:Activate(); btn.MouseButton1Click:Fire() end
-			return page
-		end
+		ScreenGui=screen, Main=main, Theme=th,
+		GetToggleKey=function() return keybind end,
+		SetToggleKey=function(_, key) keybind=key or Enum.KeyCode.K end
 	}, TigasLib)
+
+	function api:CreateTab(name)
+		local wrap,btn,hl=makeTabButton(tostring(name or "Tab"))
+		local page=createPage(name or "Tab")
+		btn.MouseButton1Click:Connect(function()
+			for _,w in ipairs(navBar:GetChildren()) do if w:IsA("Frame") then w:SetAttribute("Active",false); T(w,{BackgroundColor3=th.Card,BackgroundTransparency=.18},.12); if w:FindFirstChildOfClass("Frame") then T(w:FindFirstChildOfClass("Frame"),{Size=UDim2.new(0,0,0,2)},.14) end end end
+			for _,p in ipairs(pagesFolder:GetChildren()) do p.Visible=false end
+			wrap:SetAttribute("Active",true)
+			T(hl,{Size=UDim2.new(1,0,0,2)},.14)
+			page.Visible=true
+			page.Position=UDim2.new(0,8,0,6); page.Size=UDim2.new(1,-16,1,-12)
+			T(page,{Position=UDim2.new(0,0,0,0),Size=UDim2.new(1,0,1,0)},.18)
+			currentTab=page
+		end)
+		if not currentTab then btn:Activate(); btn.MouseButton1Click:Fire() end
+		return page
+	end
 
 	function api:CreateSection(o)
 		o=o or {}
-		local parent=o.Parent or currentTab or createPage("Main")
-		if not currentTab then
-			for _,p in ipairs(pages:GetChildren()) do p.Visible=false end
-			parent.Visible=true; parent:SetAttribute("Active",true); currentTab=parent
-		end
-		local frame=C("Frame",{Parent=parent,Size=UDim2.new(1,0,0,50),BackgroundColor3=th.Card,BackgroundTransparency=.12})
-		C("UICorner",{Parent=frame,CornerRadius=UDim.new(0,10)}); Glass(frame,th,.7)
+		local parent=o.Parent or currentTab or self:CreateTab("Main")
+		if not currentTab then parent.Visible=true; currentTab=parent end
+		local frame=C("Frame",{Parent=parent,Size=UDim2.new(1,0,0,54),BackgroundColor3=th.Card,BackgroundTransparency=.12})
+		C("UICorner",{Parent=frame,CornerRadius=UDim.new(0,10)}); Glass(frame,th,.72)
 		local head=C("Frame",{Parent=frame,Size=UDim2.new(1,0,0,40),BackgroundTransparency=1})
 		local icon=C("TextLabel",{Parent=head,Size=UDim2.fromOffset(30,30),Position=UDim2.new(0,10,0.5,-15),BackgroundTransparency=1,Text="◈",TextColor3=th.Primary,TextSize=18,Font=Enum.Font.GothamBold})
 		C("TextLabel",{Parent=head,Size=UDim2.new(1,-50,1,0),Position=UDim2.fromOffset(50,0),BackgroundTransparency=1,Text=tostring(o.Name or "Section"),TextColor3=th.Text,TextSize=16,Font=Enum.Font.GothamSemibold,TextXAlignment=Enum.TextXAlignment.Left})
-		local content=C("Frame",{Parent=frame,Name="Content",Size=UDim2.new(1,-20,0,0),Position=UDim2.fromOffset(10,45),BackgroundTransparency=1})
+		local content=C("Frame",{Parent=frame,Name="Content",Size=UDim2.new(1,-20,0,0),Position=UDim2.fromOffset(10,46),BackgroundTransparency=1})
 		local list=C("UIListLayout",{Parent=content,Padding=UDim.new(0,10)})
-		list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() content.Size=UDim2.new(1,-20,0,list.AbsoluteContentSize.Y); frame.Size=UDim2.new(1,0,0,list.AbsoluteContentSize.Y+55) end)
-		head.MouseEnter:Connect(function() T(icon,{TextColor3=th.Accent,Rotation=180},.22) end)
-		head.MouseLeave:Connect(function() T(icon,{TextColor3=th.Primary,Rotation=0},.22) end)
+		list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() content.Size=UDim2.new(1,-20,0,list.AbsoluteContentSize.Y); frame.Size=UDim2.new(1,0,0,list.AbsoluteContentSize.Y+58) end)
+		head.MouseEnter:Connect(function() T(icon,{TextColor3=th.Accent,Rotation=180},.2) end)
+		head.MouseLeave:Connect(function() T(icon,{TextColor3=th.Primary,Rotation=0},.2) end)
 		return {Frame=frame,Content=content}
 	end
 
@@ -231,44 +217,27 @@ function TigasLib:CreateWindow(opts)
 		local prec=o.Precision or 0
 		local def=(o.Default~=nil) and o.Default or min
 		local cb=o.Callback or function()end
-		local f=C("Frame",{Parent=p,Size=UDim2.new(1,0,0,70),BackgroundColor3=th.Card,BackgroundTransparency=.16})
+		local f=C("Frame",{Parent=p,Size=UDim2.new(1,0,0,72),BackgroundColor3=th.Card,BackgroundTransparency=.16})
 		C("UICorner",{Parent=f,CornerRadius=UDim.new(0,10)}); Glass(f,th,.72)
-		local hdr=C("Frame",{Parent=f,Size=UDim2.new(1,0,0,24),BackgroundTransparency=1})
+		local hdr=C("Frame",{Parent=f,Size=UDim2.new(1,0,0,26),BackgroundTransparency=1})
 		C("TextLabel",{Parent=hdr,Size=UDim2.new(.7,0,1,0),Position=UDim2.fromOffset(10,0),BackgroundTransparency=1,Text=tostring(o.Name or "Slider"),TextColor3=th.Text,TextSize=14,Font=Enum.Font.GothamSemibold,TextXAlignment=Enum.TextXAlignment.Left})
 		local vLbl=C("TextLabel",{Parent=hdr,Size=UDim2.new(.25,0,1,0),Position=UDim2.new(.75,0,0,0),BackgroundTransparency=1,Text=tostring(def),TextColor3=th.Primary,TextSize=14,Font=Enum.Font.GothamBold,TextXAlignment=Enum.TextXAlignment.Right})
-		local container=C("Frame",{Parent=f,Size=UDim2.new(1,-20,0,30),Position=UDim2.fromOffset(10,34),BackgroundTransparency=1})
-		local track=C("Frame",{Parent=container,Size=UDim2.new(1,0,0,8),Position=UDim2.new(0,0,.5,-4),BackgroundColor3=th.Surface,BackgroundTransparency=.45})
+		local container=C("Frame",{Parent=f,Size=UDim2.new(1,-20,0,32),Position=UDim2.fromOffset(10,34),BackgroundTransparency=1})
+		local track=C("Frame",{Parent=container,Size=UDim2.new(1,0,0,8),Position=UDim2.new(0,0,.5,-4),BackgroundColor3=th.Surface,BackgroundTransparency=.42})
 		C("UICorner",{Parent=track,CornerRadius=UDim.new(1,0)}); Glass(track,th)
 		local fill=C("Frame",{Parent=track,Size=UDim2.new((def-min)/(max-min),0,1,0),BackgroundColor3=th.Primary})
 		C("UICorner",{Parent=fill,CornerRadius=UDim.new(1,0)})
 		C("UIGradient",{Parent=fill,Rotation=90,Color=ColorSequence.new(th.Primary,th.Accent,th.Secondary)})
 		local knob=C("TextButton",{Parent=track,Size=UDim2.fromOffset(20,20),Position=UDim2.new(fill.Size.X.Scale,-10,.5,-10),BackgroundColor3=Color3.new(1,1,1),Text=""})
-		C("UICorner",{Parent=knob,CornerRadius=UDim.new(1,0)})
-		local kGlow=C("UIStroke",{Parent=knob,Color=th.Primary,Thickness=2,Transparency=.3})
+		C("UICorner",{Parent=knob,CornerRadius=UDim.new(1,0)}); local kGlow=C("UIStroke",{Parent=knob,Color=th.Primary,Thickness=2,Transparency=.3})
 		C("UIGradient",{Parent=kGlow,Rotation=90,Color=ColorSequence.new(th.Primary,th.Secondary)})
 		local sliding=false
 		local function r(v) if prec>0 then local m=10^prec return math.floor(v*m)/m end return math.floor(v) end
-		local function set(v)
-			local pct=math.clamp((v-min)/(max-min),0,1)
-			T(fill,{Size=UDim2.new(pct,0,1,0)},.1)
-			T(knob,{Position=UDim2.new(pct,-10,.5,-10)},.1)
-			vLbl.Text=(prec>0) and string.format("%."..prec.."f",v) or tostring(math.floor(v))
-			cb(v)
-		end
-		knob.MouseButton1Down:Connect(function() sliding=true; T(knob,{Size=UDim2.fromOffset(24,24)},.08); T(kGlow,{Thickness=3},.08) end)
-		UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then sliding=false; T(knob,{Size=UDim2.fromOffset(20,20)},.08); T(kGlow,{Thickness=2},.08) end end)
-		UserInputService.InputChanged:Connect(function(i)
-			if sliding and i.UserInputType==Enum.UserInputType.MouseMovement then
-				local rx=(i.Position.X-track.AbsolutePosition.X)/track.AbsoluteSize.X
-				set(r(min+math.clamp(rx,0,1)*(max-min)))
-			end
-		end)
-		track.InputBegan:Connect(function(i)
-			if i.UserInputType==Enum.UserInputType.MouseButton1 then
-				local rx=(i.Position.X-track.AbsolutePosition.X)/track.AbsoluteSize.X
-				set(r(min+math.clamp(rx,0,1)*(max-min)))
-			end
-		end)
+		local function set(v) local pct=math.clamp((v-min)/(max-min),0,1) T(fill,{Size=UDim2.new(pct,0,1,0)},.1) T(knob,{Position=UDim2.new(pct,-10,.5,-10)},.1) vLbl.Text=(prec>0) and string.format("%."..prec.."f",v) or tostring(math.floor(v)) cb(v) end
+		knob.MouseButton1Down:Connect(function() sliding=true T(knob,{Size=UDim2.fromOffset(24,24)},.08) T(kGlow,{Thickness=3},.08) end)
+		UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then sliding=false T(knob,{Size=UDim2.fromOffset(20,20)},.08) T(kGlow,{Thickness=2},.08) end end)
+		UserInputService.InputChanged:Connect(function(i) if sliding and i.UserInputType==Enum.UserInputType.MouseMovement then local rx=(i.Position.X-track.AbsolutePosition.X)/track.AbsoluteSize.X set(r(min+math.clamp(rx,0,1)*(max-min))) end end)
+		track.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then local rx=(i.Position.X-track.AbsolutePosition.X)/track.AbsoluteSize.X set(r(min+math.clamp(rx,0,1)*(max-min))) end end)
 		set(def)
 		return {SetValue=function(v) set(math.clamp(v,min,max)) end, GetValue=function() return tonumber(vLbl.Text) end}
 	end
@@ -281,13 +250,10 @@ function TigasLib:CreateWindow(opts)
 		C("UICorner",{Parent=f,CornerRadius=UDim.new(0,10)}); Glass(f,th,.72)
 		local click=C("TextButton",{Parent=f,Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,Text=""})
 		local lbl=C("TextLabel",{Parent=f,Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,Text=tostring(o.Name or "Button"),TextColor3=th.Text,TextSize=14,Font=Enum.Font.GothamSemibold})
-		local function ripple()
-			local r=C("Frame",{Parent=f,Size=UDim2.new(0,0,0,0),Position=UDim2.fromScale(.5,.5),BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=.8})
-			C("UICorner",{Parent=r,CornerRadius=UDim.new(1,0)}); T(r,{Size=UDim2.new(2,0,2,0),BackgroundTransparency=1},.55); task.delay(.55,function() r:Destroy() end)
-		end
-		click.MouseEnter:Connect(function() T(f,{BackgroundColor3=th.Surface,BackgroundTransparency=.06},.14); T(lbl,{TextColor3=th.Primary},.14) end)
-		click.MouseLeave:Connect(function() T(f,{BackgroundColor3=th.Card,BackgroundTransparency=.14},.14); T(lbl,{TextColor3=th.Text},.14) end)
-		click.MouseButton1Click:Connect(function() ripple(); T(f,{Size=UDim2.new(.98,0,0,42)},.06); T(f,{Size=UDim2.new(1,0,0,44)},.06); cb() end)
+		local function ripple() local r=C("Frame",{Parent=f,Size=UDim2.new(0,0,0,0),Position=UDim2.fromScale(.5,.5),BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=.8}) C("UICorner",{Parent=r,CornerRadius=UDim.new(1,0)}); T(r,{Size=UDim2.new(2,0,2,0),BackgroundTransparency=1},.5); task.delay(.5,function() r:Destroy() end) end
+		click.MouseEnter:Connect(function() T(f,{BackgroundColor3=th.Surface,BackgroundTransparency=.06},.12) T(lbl,{TextColor3=th.Primary},.12) end)
+		click.MouseLeave:Connect(function() T(f,{BackgroundColor3=th.Card,BackgroundTransparency=.14},.12) T(lbl,{TextColor3=th.Text},.12) end)
+		click.MouseButton1Click:Connect(function() ripple() T(f,{Size=UDim2.new(.985,0,0,42)},.07) T(f,{Size=UDim2.new(1,0,0,44)},.07) cb() end)
 		return {Frame=f,SetText=function(t) lbl.Text=t end}
 	end
 
@@ -298,18 +264,14 @@ function TigasLib:CreateWindow(opts)
 		local cb=o.Callback or function()end
 		local f=C("Frame",{Parent=p,Size=UDim2.new(1,0,0,36),BackgroundColor3=th.Card,BackgroundTransparency=.14})
 		C("UICorner",{Parent=f,CornerRadius=UDim.new(0,8)}); Glass(f,th,.72)
-		local lbl=C("TextLabel",{Parent=f,Size=UDim2.new(.7,0,1,0),Position=UDim2.fromOffset(10,0),BackgroundTransparency=1,Text=tostring(o.Name or "Toggle"),TextColor3=th.Text,TextSize=14,Font=Enum.Font.Gotham,TextXAlignment=Enum.TextXAlignment.Left})
-		local wrap=C("Frame",{Parent=f,Size=UDim2.fromOffset(50,24),Position=UDim2.new(.9,-50,.5,-12),BackgroundTransparency=1})
+		local lbl=C("TextLabel",{Parent=f,Size=UDim2.new(.72,0,1,0),Position=UDim2.fromOffset(10,0),BackgroundTransparency=1,Text=tostring(o.Name or "Toggle"),TextColor3=th.Text,TextSize=14,Font=Enum.Font.Gotham,TextXAlignment=Enum.TextXAlignment.Left})
+		local wrap=C("Frame",{Parent=f,Size=UDim2.fromOffset(56,24),Position=UDim2.new(.9,-56,.5,-12),BackgroundTransparency=1})
 		local bg=C("Frame",{Parent=wrap,Size=UDim2.new(1,0,1,0),BackgroundColor3=th.Surface,BackgroundTransparency=.28})
 		C("UICorner",{Parent=bg,CornerRadius=UDim.new(1,0)}); Glass(bg,th)
-		local knob=C("Frame",{Parent=bg,Size=UDim2.fromOffset(19,19),Position=UDim2.new(0,3,.5,-9),BackgroundColor3=Color3.new(1,1,1)})
+		local knob=C("Frame",{Parent=bg,Size=UDim2.fromOffset(20,20),Position=UDim2.new(0,2,.5,-10),BackgroundColor3=Color3.new(1,1,1)})
 		C("UICorner",{Parent=knob,CornerRadius=UDim.new(1,0)}); local glow=C("UIStroke",{Parent=knob,Color=th.Primary,Thickness=2,Transparency=.5})
-		local function refresh()
-			if on then T(knob,{Position=UDim2.new(1,-22,.5,-9)},.18,Enum.EasingStyle.Back); T(bg,{BackgroundColor3=th.Primary},.18); T(glow,{Color=th.Success},.18); T(lbl,{TextColor3=th.Success},.18)
-			else T(knob,{Position=UDim2.new(0,3,.5,-9)},.18,Enum.EasingStyle.Back); T(bg,{BackgroundColor3=th.Surface},.18); T(glow,{Color=th.Primary},.18); T(lbl,{TextColor3=th.Text},.18) end
-			cb(on)
-		end
-		bg.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then on=not on; refresh() end end)
+		local function refresh() if on then T(knob,{Position=UDim2.new(1,-22,.5,-10)},.18,Enum.EasingStyle.Back) T(bg,{BackgroundColor3=th.Primary},.18) T(glow,{Color=th.Success},.18) T(lbl,{TextColor3=th.Success},.18) else T(knob,{Position=UDim2.new(0,2,.5,-10)},.18,Enum.EasingStyle.Back) T(bg,{BackgroundColor3=th.Surface},.18) T(glow,{Color=th.Primary},.18) T(lbl,{TextColor3=th.Text},.18) end cb(on) end
+		bg.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then on=not on refresh() end end)
 		refresh()
 		return {SetValue=function(v) on=v; refresh() end, GetValue=function() return on end}
 	end
@@ -322,7 +284,6 @@ function TigasLib:CreateWindow(opts)
 		return {SetText=function(x) t.Text=x end}
 	end
 
-	self._instance = api
 	return api
 end
 
