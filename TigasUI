@@ -1,1 +1,631 @@
+local TigasUI = {}
+TigasUI.__index = TigasUI
 
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local Player = Players.LocalPlayer
+local Mouse = Player:GetMouse()
+
+local Theme = {
+    Primary = Color3.fromRGB(25, 115, 255),
+    Secondary = Color3.fromRGB(15, 15, 15),
+    Background = Color3.fromRGB(30, 30, 30),
+    Card = Color3.fromRGB(40, 40, 40),
+    Surface = Color3.fromRGB(50, 50, 50),
+    Text = Color3.fromRGB(255, 255, 255),
+    SubText = Color3.fromRGB(200, 200, 200),
+    Success = Color3.fromRGB(0, 255, 127),
+    Warning = Color3.fromRGB(255, 170, 0),
+    Error = Color3.fromRGB(255, 50, 50)
+}
+
+local function Create(class, properties)
+    local instance = Instance.new(class)
+    for property, value in pairs(properties) do
+        instance[property] = value
+    end
+    return instance
+end
+
+local function Tween(object, properties, duration, style)
+    local tweenInfo = TweenInfo.new(duration or 0.2, style or Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local tween = TweenService:Create(object, tweenInfo, properties)
+    tween:Play()
+    return tween
+end
+
+function TigasUI:CreateWindow(options)
+    options = options or {}
+    local window = {
+        Name = options.Name or "TigasUI",
+        Theme = options.Theme or Theme,
+        Size = options.Size or UDim2.new(0, 500, 0, 400),
+        Position = options.Position or UDim2.new(0.5, -250, 0.5, -200)
+    }
+    
+    local ScreenGui = Create("ScreenGui", {
+        Name = "TigasUI",
+        DisplayOrder = 10,
+        ResetOnSpawn = false,
+        Parent = Player:WaitForChild("PlayerGui")
+    })
+    
+    local MainFrame = Create("Frame", {
+        Name = "MainFrame",
+        Size = window.Size,
+        Position = window.Position,
+        BackgroundColor3 = window.Theme.Background,
+        BorderSizePixel = 0,
+        Parent = ScreenGui
+    })
+    
+    local UICorner = Create("UICorner", {
+        CornerRadius = UDim.new(0, 8),
+        Parent = MainFrame
+    })
+    
+    local TopBar = Create("Frame", {
+        Name = "TopBar",
+        Size = UDim2.new(1, 0, 0, 40),
+        BackgroundColor3 = window.Theme.Secondary,
+        BorderSizePixel = 0,
+        Parent = MainFrame
+    })
+    
+    local TopBarCorner = Create("UICorner", {
+        CornerRadius = UDim.new(0, 8),
+        Parent = TopBar
+    })
+    
+    local Title = Create("TextLabel", {
+        Name = "Title",
+        Size = UDim2.new(0.7, 0, 1, 0),
+        Position = UDim2.new(0.05, 0, 0, 0),
+        BackgroundTransparency = 1,
+        Text = window.Name,
+        TextColor3 = window.Theme.Text,
+        TextSize = 16,
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = TopBar
+    })
+    
+    local CloseButton = Create("TextButton", {
+        Name = "CloseButton",
+        Size = UDim2.new(0, 30, 0, 30),
+        Position = UDim2.new(0.92, 0, 0.5, -15),
+        BackgroundColor3 = window.Theme.Error,
+        BackgroundTransparency = 0.8,
+        Text = "×",
+        TextColor3 = window.Theme.Text,
+        TextSize = 18,
+        Font = Enum.Font.GothamBold,
+        Parent = TopBar
+    })
+    
+    Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = CloseButton})
+    
+    local TabHolder = Create("Frame", {
+        Name = "TabHolder",
+        Size = UDim2.new(1, 0, 0, 40),
+        Position = UDim2.new(0, 0, 0, 40),
+        BackgroundColor3 = window.Theme.Card,
+        BorderSizePixel = 0,
+        Parent = MainFrame
+    })
+    
+    local TabListLayout = Create("UIListLayout", {
+        Parent = TabHolder,
+        FillDirection = Enum.FillDirection.Horizontal,
+        Padding = UDim.new(0, 5)
+    })
+    
+    local Content = Create("ScrollingFrame", {
+        Name = "Content",
+        Size = UDim2.new(1, 0, 1, -80),
+        Position = UDim2.new(0, 0, 0, 80),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 3,
+        ScrollBarImageColor3 = window.Theme.Primary,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        Parent = MainFrame
+    })
+    
+    local UIListLayout = Create("UIListLayout", {
+        Parent = Content,
+        Padding = UDim.new(0, 10)
+    })
+    
+    local dragging = false
+    local dragInput, dragStart, startPos
+    
+    TopBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = MainFrame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    TopBar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    
+    CloseButton.MouseButton1Click:Connect(function()
+        Tween(MainFrame, {Size = UDim2.new(0, 0, 0, 0)}, 0.3)
+        wait(0.3)
+        ScreenGui:Destroy()
+    end)
+    
+    CloseButton.MouseEnter:Connect(function()
+        Tween(CloseButton, {BackgroundTransparency = 0.6}, 0.2)
+    end)
+    
+    CloseButton.MouseLeave:Connect(function()
+        Tween(CloseButton, {BackgroundTransparency = 0.8}, 0.2)
+    end)
+    
+    UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        Content.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
+    end)
+    
+    local windowTable = {
+        ScreenGui = ScreenGui,
+        MainFrame = MainFrame,
+        Content = Content,
+        TabHolder = TabHolder,
+        Theme = window.Theme
+    }
+    
+    setmetatable(windowTable, TigasUI)
+    return windowTable
+end
+
+function TigasUI:CreateTab(options)
+    local tab = {
+        Name = options.Name or "Tab",
+        Icon = options.Icon or ""
+    }
+    
+    local TabButton = Create("TextButton", {
+        Name = "TabButton",
+        Size = UDim2.new(0, 100, 1, 0),
+        BackgroundColor3 = self.Theme.Card,
+        BackgroundTransparency = 0.5,
+        Text = tab.Name,
+        TextColor3 = self.Theme.Text,
+        TextSize = 14,
+        Font = Enum.Font.Gotham,
+        Parent = self.TabHolder
+    })
+    
+    Create("UICorner", {CornerRadius = UDim.new(0, 6), Parent = TabButton})
+    
+    local TabContent = Create("ScrollingFrame", {
+        Name = "TabContent",
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 3,
+        ScrollBarImageColor3 = self.Theme.Primary,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        Visible = false,
+        Parent = self.Content
+    })
+    
+    local TabListLayout = Create("UIListLayout", {
+        Parent = TabContent,
+        Padding = UDim.new(0, 10)
+    })
+    
+    TabListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        TabContent.CanvasSize = UDim2.new(0, 0, 0, TabListLayout.AbsoluteContentSize.Y + 10)
+    end)
+    
+    if #self.TabHolder:GetChildren() == 2 then
+        TabContent.Visible = true
+        Tween(TabButton, {BackgroundTransparency = 0}, 0.2)
+    end
+    
+    TabButton.MouseButton1Click:Connect(function()
+        for _, child in pairs(self.Content:GetChildren()) do
+            if child:IsA("ScrollingFrame") then
+                child.Visible = false
+            end
+        end
+        
+        for _, child in pairs(self.TabHolder:GetChildren()) do
+            if child:IsA("TextButton") then
+                Tween(child, {BackgroundTransparency = 0.5}, 0.2)
+            end
+        end
+        
+        TabContent.Visible = true
+        Tween(TabButton, {BackgroundTransparency = 0}, 0.2)
+    end)
+    
+    TabButton.MouseEnter:Connect(function()
+        if TabButton.BackgroundTransparency == 0.5 then
+            Tween(TabButton, {BackgroundTransparency = 0.3}, 0.2)
+        end
+    end)
+    
+    TabButton.MouseLeave:Connect(function()
+        if TabButton.BackgroundTransparency == 0.3 then
+            Tween(TabButton, {BackgroundTransparency = 0.5}, 0.2)
+        end
+    end)
+    
+    return {
+        Content = TabContent
+    }
+end
+
+function TigasUI:CreateSection(options)
+    local section = {
+        Name = options.Name or "Section",
+        Parent = options.Parent or self.Content
+    }
+    
+    local SectionFrame = Create("Frame", {
+        Name = "SectionFrame",
+        Size = UDim2.new(1, 0, 0, 40),
+        BackgroundColor3 = self.Theme.Card,
+        BorderSizePixel = 0,
+        Parent = section.Parent
+    })
+    
+    Create("UICorner", {CornerRadius = UDim.new(0, 6), Parent = SectionFrame})
+    
+    local SectionTitle = Create("TextLabel", {
+        Name = "SectionTitle",
+        Size = UDim2.new(1, -20, 1, 0),
+        Position = UDim2.new(0, 10, 0, 0),
+        BackgroundTransparency = 1,
+        Text = section.Name,
+        TextColor3 = self.Theme.Text,
+        TextSize = 14,
+        Font = Enum.Font.GothamSemibold,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = SectionFrame
+    })
+    
+    local SectionContent = Create("Frame", {
+        Name = "SectionContent",
+        Size = UDim2.new(1, -20, 0, 0),
+        Position = UDim2.new(0, 10, 0, 45),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Parent = SectionFrame
+    })
+    
+    local SectionListLayout = Create("UIListLayout", {
+        Parent = SectionContent,
+        Padding = UDim.new(0, 8)
+    })
+    
+    SectionListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        SectionContent.Size = UDim2.new(1, -20, 0, SectionListLayout.AbsoluteContentSize.Y)
+        SectionFrame.Size = UDim2.new(1, 0, 0, SectionListLayout.AbsoluteContentSize.Y + 50)
+    end)
+    
+    return {
+        Frame = SectionFrame,
+        Content = SectionContent
+    }
+end
+
+function TigasUI:CreateButton(options)
+    local button = {
+        Name = options.Name or "Button",
+        Callback = options.Callback or function() end,
+        Parent = options.Parent or self.Content
+    }
+    
+    local ButtonFrame = Create("Frame", {
+        Name = "ButtonFrame",
+        Size = UDim2.new(1, 0, 0, 40),
+        BackgroundColor3 = self.Theme.Card,
+        BorderSizePixel = 0,
+        Parent = button.Parent
+    })
+    
+    Create("UICorner", {CornerRadius = UDim.new(0, 6), Parent = ButtonFrame})
+    
+    local Button = Create("TextButton", {
+        Name = "Button",
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Text = "",
+        Parent = ButtonFrame
+    })
+    
+    local ButtonLabel = Create("TextLabel", {
+        Name = "ButtonLabel",
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Text = button.Name,
+        TextColor3 = self.Theme.Text,
+        TextSize = 14,
+        Font = Enum.Font.Gotham,
+        Parent = ButtonFrame
+    })
+    
+    Button.MouseEnter:Connect(function()
+        Tween(ButtonFrame, {BackgroundColor3 = self.Theme.Surface}, 0.2)
+    end)
+    
+    Button.MouseLeave:Connect(function()
+        Tween(ButtonFrame, {BackgroundColor3 = self.Theme.Card}, 0.2)
+    end)
+    
+    Button.MouseButton1Click:Connect(function()
+        Tween(ButtonFrame, {Size = UDim2.new(0.98, 0, 0, 38)}, 0.1)
+        Tween(ButtonFrame, {Size = UDim2.new(1, 0, 0, 40)}, 0.1)
+        button.Callback()
+    end)
+    
+    return ButtonFrame
+end
+
+function TigasUI:CreateToggle(options)
+    local toggle = {
+        Name = options.Name or "Toggle",
+        Default = options.Default or false,
+        Callback = options.Callback or function() end,
+        Parent = options.Parent or self.Content
+    }
+    
+    local ToggleFrame = Create("Frame", {
+        Name = "ToggleFrame",
+        Size = UDim2.new(1, 0, 0, 30),
+        BackgroundColor3 = self.Theme.Card,
+        BorderSizePixel = 0,
+        Parent = toggle.Parent
+    })
+    
+    Create("UICorner", {CornerRadius = UDim.new(0, 6), Parent = ToggleFrame})
+    
+    local ToggleLabel = Create("TextLabel", {
+        Name = "ToggleLabel",
+        Size = UDim2.new(0.7, 0, 1, 0),
+        Position = UDim2.new(0, 10, 0, 0),
+        BackgroundTransparency = 1,
+        Text = toggle.Name,
+        TextColor3 = self.Theme.Text,
+        TextSize = 14,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = ToggleFrame
+    })
+    
+    local ToggleBackground = Create("Frame", {
+        Name = "ToggleBackground",
+        Size = UDim2.new(0, 40, 0, 20),
+        Position = UDim2.new(0.9, -40, 0.5, -10),
+        BackgroundColor3 = self.Theme.Surface,
+        BorderSizePixel = 0,
+        Parent = ToggleFrame
+    })
+    
+    Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = ToggleBackground})
+    
+    local ToggleButton = Create("Frame", {
+        Name = "ToggleButton",
+        Size = UDim2.new(0, 16, 0, 16),
+        Position = UDim2.new(0, 2, 0.5, -8),
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        BorderSizePixel = 0,
+        Parent = ToggleBackground
+    })
+    
+    Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = ToggleButton})
+    
+    local isToggled = toggle.Default
+    
+    local function UpdateToggle()
+        if isToggled then
+            Tween(ToggleButton, {Position = UDim2.new(1, -18, 0.5, -8)}, 0.2)
+            Tween(ToggleBackground, {BackgroundColor3 = self.Theme.Primary}, 0.2)
+        else
+            Tween(ToggleButton, {Position = UDim2.new(0, 2, 0.5, -8)}, 0.2)
+            Tween(ToggleBackground, {BackgroundColor3 = self.Theme.Surface}, 0.2)
+        end
+        toggle.Callback(isToggled)
+    end
+    
+    ToggleBackground.MouseButton1Click:Connect(function()
+        isToggled = not isToggled
+        UpdateToggle()
+    end)
+    
+    UpdateToggle()
+    
+    return {
+        SetValue = function(value)
+            isToggled = value
+            UpdateToggle()
+        end,
+        GetValue = function()
+            return isToggled
+        end
+    }
+end
+
+function TigasUI:CreateSlider(options)
+    local slider = {
+        Name = options.Name or "Slider",
+        Min = options.Min or 0,
+        Max = options.Max or 100,
+        Default = options.Default or options.Min or 0,
+        Callback = options.Callback or function() end,
+        Parent = options.Parent or self.Content
+    }
+    
+    local SliderFrame = Create("Frame", {
+        Name = "SliderFrame",
+        Size = UDim2.new(1, 0, 0, 60),
+        BackgroundColor3 = self.Theme.Card,
+        BorderSizePixel = 0,
+        Parent = slider.Parent
+    })
+    
+    Create("UICorner", {CornerRadius = UDim.new(0, 6), Parent = SliderFrame})
+    
+    local SliderTitle = Create("TextLabel", {
+        Name = "SliderTitle",
+        Size = UDim2.new(1, -20, 0, 20),
+        Position = UDim2.new(0, 10, 0, 5),
+        BackgroundTransparency = 1,
+        Text = slider.Name,
+        TextColor3 = self.Theme.Text,
+        TextSize = 14,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = SliderFrame
+    })
+    
+    local ValueLabel = Create("TextLabel", {
+        Name = "ValueLabel",
+        Size = UDim2.new(0, 60, 0, 20),
+        Position = UDim2.new(1, -70, 0, 5),
+        BackgroundTransparency = 1,
+        Text = tostring(slider.Default),
+        TextColor3 = self.Theme.Primary,
+        TextSize = 14,
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Right,
+        Parent = SliderFrame
+    })
+    
+    local Track = Create("Frame", {
+        Name = "Track",
+        Size = UDim2.new(1, -20, 0, 6),
+        Position = UDim2.new(0, 10, 0, 35),
+        BackgroundColor3 = self.Theme.Surface,
+        BorderSizePixel = 0,
+        Parent = SliderFrame
+    })
+    
+    Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = Track})
+    
+    local Fill = Create("Frame", {
+        Name = "Fill",
+        Size = UDim2.new((slider.Default - slider.Min) / (slider.Max - slider.Min), 0, 1, 0),
+        BackgroundColor3 = self.Theme.Primary,
+        BorderSizePixel = 0,
+        Parent = Track
+    })
+    
+    Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = Fill})
+    
+    local SliderButton = Create("TextButton", {
+        Name = "SliderButton",
+        Size = UDim2.new(0, 20, 0, 20),
+        Position = UDim2.new(Fill.Size.X.Scale, -10, 0.5, -10),
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        Text = "",
+        Parent = Track
+    })
+    
+    Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = SliderButton})
+    
+    local isSliding = false
+    
+    local function UpdateSlider(value)
+        local percentage = (value - slider.Min) / (slider.Max - slider.Min)
+        percentage = math.clamp(percentage, 0, 1)
+        
+        Tween(Fill, {Size = UDim2.new(percentage, 0, 1, 0)}, 0.1)
+        Tween(SliderButton, {Position = UDim2.new(percentage, -10, 0.5, -10)}, 0.1)
+        
+        ValueLabel.Text = tostring(math.floor(value))
+        slider.Callback(value)
+    end
+    
+    SliderButton.MouseButton1Down:Connect(function()
+        isSliding = true
+        Tween(SliderButton, {Size = UDim2.new(0, 24, 0, 24)}, 0.1)
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            isSliding = false
+            Tween(SliderButton, {Size = UDim2.new(0, 20, 0, 20)}, 0.1)
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if isSliding and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local relativeX = (input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X
+            relativeX = math.clamp(relativeX, 0, 1)
+            local value = slider.Min + (relativeX * (slider.Max - slider.Min))
+            value = math.floor(value)
+            UpdateSlider(value)
+        end
+    end)
+    
+    UpdateSlider(slider.Default)
+    
+    return {
+        SetValue = function(value)
+            UpdateSlider(math.clamp(value, slider.Min, slider.Max))
+        end,
+        GetValue = function()
+            return tonumber(ValueLabel.Text)
+        end
+    }
+end
+
+function TigasUI:CreateLabel(options)
+    local label = {
+        Text = options.Text or "Label",
+        Parent = options.Parent or self.Content
+    }
+    
+    local LabelFrame = Create("Frame", {
+        Name = "LabelFrame",
+        Size = UDim2.new(1, 0, 0, 25),
+        BackgroundTransparency = 1,
+        Parent = label.Parent
+    })
+    
+    local Label = Create("TextLabel", {
+        Name = "Label",
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Text = label.Text,
+        TextColor3 = self.Theme.SubText,
+        TextSize = 14,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = LabelFrame
+    })
+    
+    return {
+        SetText = function(text)
+            Label.Text = text
+        end
+    }
+end
+
+return TigasUI
