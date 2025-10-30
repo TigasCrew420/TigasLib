@@ -5,286 +5,860 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local StarterGui = game:GetService("StarterGui")
+
 local Player = Players.LocalPlayer
+local Mouse = Player:GetMouse()
 
 local Theme = {
-	Primary   = Color3.fromRGB(0,247,255),
-	Secondary = Color3.fromRGB(148,0,255),
-	Accent    = Color3.fromRGB(255,0,140),
-	Background= Color3.fromRGB(14,14,22),
-	Card      = Color3.fromRGB(22,22,34),
-	Surface   = Color3.fromRGB(32,32,48),
-	Text      = Color3.fromRGB(245,245,255),
-	SubText   = Color3.fromRGB(178,186,210),
-	Success   = Color3.fromRGB(0,255,162),
-	Warning   = Color3.fromRGB(255,230,0),
-	Error     = Color3.fromRGB(255,66,99)
+    Primary = Color3.fromRGB(0, 247, 255),
+    Secondary = Color3.fromRGB(148, 0, 255),
+    Accent = Color3.fromRGB(255, 0, 140),
+    Background = Color3.fromRGB(10, 10, 20),
+    Card = Color3.fromRGB(20, 20, 35),
+    Surface = Color3.fromRGB(30, 30, 50),
+    Text = Color3.fromRGB(255, 255, 255),
+    SubText = Color3.fromRGB(180, 180, 220),
+    Success = Color3.fromRGB(0, 255, 162),
+    Warning = Color3.fromRGB(255, 230, 0),
+    Error = Color3.fromRGB(255, 50, 100),
+    Dark = Color3.fromRGB(5, 5, 15)
 }
 
-local function C(c,p) local o=Instance.new(c) for k,v in pairs(p)do o[k]=v end return o end
-local function T(o,p,t,s) local i=TweenInfo.new(t or .35,s or Enum.EasingStyle.Quart,Enum.EasingDirection.Out) local tw=TweenService:Create(o,i,p) tw:Play() return tw end
-local function Glass(f,th,int) int=int or .88 local s=C("UIStroke",{Parent=f,Color=Color3.new(1,1,1),Transparency=int,Thickness=1.25,ApplyStrokeMode=Enum.ApplyStrokeMode.Border}); C("UIGradient",{Parent=s,Rotation=45,Color=ColorSequence.new({ColorSequenceKeypoint.new(0,th.Primary),ColorSequenceKeypoint.new(.5,th.Accent),ColorSequenceKeypoint.new(1,th.Secondary)})}) end
-local function Shadow(p,size,alpha) return C("ImageLabel",{Parent=p,BackgroundTransparency=1,Image="rbxassetid://5028857084",ScaleType=Enum.ScaleType.Slice,SliceCenter=Rect.new(24,24,276,276),ImageTransparency=alpha or .22,Size=size or UDim2.new(1,24,1,24),Position=UDim2.fromOffset(-12,-12),ZIndex=0}) end
-
-local function Splash(screen, text, color)
-	local overlay=C("Frame",{Parent=screen,Size=UDim2.new(1,0,1,0),BackgroundColor3=Color3.new(0,0,0),BackgroundTransparency=1,ZIndex=9999})
-	local ring=C("ImageLabel",{Parent=overlay,AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),BackgroundTransparency=1,Image="rbxassetid://9429094331",ImageColor3=color or Theme.Primary,ImageTransparency=1,Size=UDim2.fromOffset(24,24),ZIndex=10000})
-	local label=C("TextLabel",{Parent=overlay,AnchorPoint=Vector2.new(.5,.5),Position=UDim2.fromScale(.5,.5),BackgroundTransparency=1,Text=text or "TigasLib",TextSize=40,Font=Enum.Font.GothamBlack,TextTransparency=1,TextColor3=color or Theme.Primary,ZIndex=10001})
-	T(overlay,{BackgroundTransparency=.1},.1)
-	T(ring,{ImageTransparency=0,Size=UDim2.fromOffset(460,460)},.45,Enum.EasingStyle.Quad)
-	T(label,{TextTransparency=0},.25)
-	task.wait(.4)
-	T(label,{TextTransparency=1},.18)
-	T(ring,{ImageTransparency=1},.22)
-	T(overlay,{BackgroundTransparency=1},.2)
-	task.wait(.2)
-	overlay:Destroy()
+local function Create(class, properties)
+    local instance = Instance.new(class)
+    for property, value in pairs(properties) do
+        instance[property] = value
+    end
+    return instance
 end
 
-local function Pulse(frame,th)
-	local s=C("UIStroke",{Parent=frame,Color=th.Primary,Transparency=.75,Thickness=2})
-	C("UIGradient",{Parent=s,Rotation=90,Color=ColorSequence.new(th.Primary,th.Secondary)})
-	task.spawn(function()
-		while frame.Parent do
-			T(s,{Transparency=.55,Thickness=3},1,Enum.EasingStyle.Sine); task.wait(1)
-			T(s,{Transparency=.8,Thickness=2},1,Enum.EasingStyle.Sine); task.wait(1)
-		end
-	end)
+local function Tween(object, properties, duration, style)
+    local tweenInfo = TweenInfo.new(duration or 0.3, style or Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    local tween = TweenService:Create(object, tweenInfo, properties)
+    tween:Play()
+    return tween
 end
 
-function TigasLib:CreateWindow(opts)
-	opts=opts or {}
-	local th = opts.Theme or Theme
-	local keybind = opts.ToggleKey or Enum.KeyCode.K
+local function ApplyGlassEffect(frame, intensity)
+    local Stroke = Create("UIStroke", {
+        Parent = frame,
+        Color = Color3.fromRGB(255, 255, 255),
+        Transparency = intensity or 0.9,
+        Thickness = 1.5,
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    })
+    
+    local Gradient = Create("UIGradient", {
+        Parent = Stroke,
+        Rotation = 45,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Theme.Primary),
+            ColorSequenceKeypoint.new(0.5, Theme.Accent),
+            ColorSequenceKeypoint.new(1, Theme.Secondary)
+        })
+    })
+    
+    return Stroke, Gradient
+end
 
-	local screen=C("ScreenGui",{Name="TigasLib",ResetOnSpawn=false,DisplayOrder=60,IgnoreGuiInset=true,Parent=Player:WaitForChild("PlayerGui")})
-	if opts.AcrylicBlur ~= false then C("BlurEffect",{Name="TL_Blur",Size=10,Parent=screen}) end
+local function CreatePulseEffect(frame)
+    local PulseGlow = Create("UIStroke", {
+        Parent = frame,
+        Color = Theme.Primary,
+        Thickness = 2,
+        Transparency = 0.8
+    })
+    
+    local PulseGradient = Create("UIGradient", {
+        Parent = PulseGlow,
+        Rotation = 90,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Theme.Primary),
+            ColorSequenceKeypoint.new(1, Theme.Secondary)
+        })
+    })
+    
+    coroutine.wrap(function()
+        while frame.Parent do
+            Tween(PulseGlow, {Thickness = 3, Transparency = 0.6}, 1, Enum.EasingStyle.Sine)
+            wait(1)
+            Tween(PulseGlow, {Thickness = 2, Transparency = 0.8}, 1, Enum.EasingStyle.Sine)
+            wait(1)
+        end
+    end)()
+    
+    return PulseGlow
+end
 
-	local main=C("Frame",{Parent=screen,Name="Main",Size=UDim2.fromOffset((opts.Size and opts.Size.X.Offset) or 720,(opts.Size and opts.Size.Y.Offset) or 540),
-		Position=opts.Position or UDim2.new(.5,-360,.5,-270),BackgroundColor3=th.Background,BackgroundTransparency=opts.Transparency or .06,BorderSizePixel=0,ClipsDescendants=true})
-	C("UICorner",{Parent=main,CornerRadius=UDim.new(0,12)}); Glass(main,th,.82); Pulse(main,th); Shadow(main,nil,.2)
+function TigasLib:CreateWindow(options)
+    options = options or {}
+    local window = {
+        Name = options.Name or "TigasLib",
+        Theme = options.Theme or Theme,
+        Size = options.Size or UDim2.new(0, 600, 0, 500),
+        Position = options.Position or UDim2.new(0.5, -300, 0.5, -250),
+        Transparency = options.Transparency or 0.05,
+        AcrylicBlur = options.AcrylicBlur or true
+    }
+    
+    local ScreenGui = Create("ScreenGui", {
+        Name = "TigasLib",
+        DisplayOrder = 10,
+        ResetOnSpawn = false,
+        Parent = Player:WaitForChild("PlayerGui")
+    })
+    
+    if window.AcrylicBlur then
+        local Blur = Create("BlurEffect", {
+            Name = "BackgroundBlur",
+            Size = 10,
+            Parent = ScreenGui
+        })
+    end
+    
+    local MainContainer = Create("Frame", {
+        Name = "MainContainer",
+        Size = window.Size,
+        Position = window.Position,
+        BackgroundColor3 = window.Theme.Background,
+        BackgroundTransparency = window.Transparency,
+        BorderSizePixel = 0,
+        ClipsDescendants = true,
+        Parent = ScreenGui
+    })
+    
+    ApplyGlassEffect(MainContainer, 0.8)
+    CreatePulseEffect(MainContainer)
+    
+    local UICorner = Create("UICorner", {
+        CornerRadius = UDim.new(0, 16),
+        Parent = MainContainer
+    })
+    
+    local BackgroundPattern = Create("Frame", {
+        Name = "BackgroundPattern",
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Parent = MainContainer
+    })
+    
+    local AnimatedGradient = Create("UIGradient", {
+        Parent = BackgroundPattern,
+        Rotation = 0,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 10, 30)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(15, 15, 40)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 30))
+        }),
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.8),
+            NumberSequenceKeypoint.new(1, 0.9)
+        })
+    })
+    
+    coroutine.wrap(function()
+        while BackgroundPattern.Parent do
+            for i = 0, 360, 2 do
+                AnimatedGradient.Rotation = i
+                RunService.RenderStepped:Wait()
+            end
+        end
+    end)()
+    
+    local TopBar = Create("Frame", {
+        Name = "TopBar",
+        Size = UDim2.new(1, 0, 0, 50),
+        BackgroundColor3 = window.Theme.Surface,
+        BackgroundTransparency = 0.4,
+        BorderSizePixel = 0,
+        Parent = MainContainer
+    })
+    
+    local TopBarCorner = Create("UICorner", {
+        CornerRadius = UDim.new(0, 16),
+        Parent = TopBar
+    })
+    
+    ApplyGlassEffect(TopBar, 0.7)
+    
+    local TopBarGradient = Create("UIGradient", {
+        Parent = TopBar,
+        Rotation = 90,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Theme.Primary),
+            ColorSequenceKeypoint.new(0.3, Theme.Accent),
+            ColorSequenceKeypoint.new(0.7, Theme.Secondary),
+            ColorSequenceKeypoint.new(1, Theme.Primary)
+        }),
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.7),
+            NumberSequenceKeypoint.new(1, 0.9)
+        })
+    })
+    
+    local TitleContainer = Create("Frame", {
+        Name = "TitleContainer",
+        Size = UDim2.new(0.7, 0, 1, 0),
+        Position = UDim2.new(0, 15, 0, 0),
+        BackgroundTransparency = 1,
+        Parent = TopBar
+    })
+    
+    local Title = Create("TextLabel", {
+        Name = "Title",
+        Size = UDim2.new(1, 0, 0.6, 0),
+        Position = UDim2.new(0, 0, 0.2, 0),
+        BackgroundTransparency = 1,
+        Text = window.Name,
+        TextColor3 = window.Theme.Text,
+        TextSize = 20,
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = TitleContainer
+    })
+    
+    local Subtitle = Create("TextLabel", {
+        Name = "Subtitle",
+        Size = UDim2.new(1, 0, 0.4, 0),
+        Position = UDim2.new(0, 0, 0.6, 0),
+        BackgroundTransparency = 1,
+        Text = "Futuristic UI Library",
+        TextColor3 = window.Theme.SubText,
+        TextSize = 12,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = TitleContainer
+    })
+    
+    local ControlContainer = Create("Frame", {
+        Name = "ControlContainer",
+        Size = UDim2.new(0.2, 0, 1, 0),
+        Position = UDim2.new(0.8, 0, 0, 0),
+        BackgroundTransparency = 1,
+        Parent = TopBar
+    })
+    
+    local MinimizeButton = Create("TextButton", {
+        Name = "MinimizeButton",
+        Size = UDim2.new(0, 30, 0, 30),
+        Position = UDim2.new(0.2, 0, 0.5, -15),
+        BackgroundColor3 = Theme.Warning,
+        BackgroundTransparency = 0.3,
+        Text = "_",
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        TextSize = 16,
+        Font = Enum.Font.GothamBold,
+        Parent = ControlContainer
+    })
+    
+    local CloseButton = Create("TextButton", {
+        Name = "CloseButton",
+        Size = UDim2.new(0, 30, 0, 30),
+        Position = UDim2.new(0.6, 0, 0.5, -15),
+        BackgroundColor3 = Theme.Error,
+        BackgroundTransparency = 0.3,
+        Text = "×",
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        TextSize = 20,
+        Font = Enum.Font.GothamBold,
+        Parent = ControlContainer
+    })
+    
+    Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = MinimizeButton})
+    Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = CloseButton})
+    ApplyGlassEffect(MinimizeButton)
+    ApplyGlassEffect(CloseButton)
+    
+    local Content = Create("ScrollingFrame", {
+        Name = "Content",
+        Size = UDim2.new(1, -20, 1, -70),
+        Position = UDim2.new(0, 10, 0, 60),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 4,
+        ScrollBarImageColor3 = Theme.Primary,
+        ScrollBarImageTransparency = 0.7,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        Parent = MainContainer
+    })
+    
+    local UIListLayout = Create("UIListLayout", {
+        Parent = Content,
+        Padding = UDim.new(0, 15)
+    })
+    
+    local dragging = false
+    local dragInput, dragStart, startPos
+    
+    TopBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = MainContainer.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    TopBar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            MainContainer.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    
+    CloseButton.MouseButton1Click:Connect(function()
+        Tween(MainContainer, {Size = UDim2.new(0, 0, 0, 0), Position = UDim2.new(0.5, 0, 0.5, 0)}, 0.3)
+        wait(0.3)
+        ScreenGui:Destroy()
+    end)
+    
+    local minimized = false
+    MinimizeButton.MouseButton1Click:Connect(function()
+        minimized = not minimized
+        if minimized then
+            Tween(MainContainer, {Size = UDim2.new(0, 600, 0, 50)}, 0.3)
+            Tween(Content, {Visible = false}, 0.3)
+        else
+            Tween(MainContainer, {Size = window.Size}, 0.3)
+            Tween(Content, {Visible = true}, 0.3)
+        end
+    end)
+    
+    local function SetupButtonHover(button, hoverColor)
+        button.MouseEnter:Connect(function()
+            Tween(button, {BackgroundTransparency = 0.1, Size = UDim2.new(0, 32, 0, 32)}, 0.2)
+        end)
+        
+        button.MouseLeave:Connect(function()
+            Tween(button, {BackgroundTransparency = 0.3, Size = UDim2.new(0, 30, 0, 30)}, 0.2)
+        end)
+    end
+    
+    SetupButtonHover(MinimizeButton, Theme.Warning)
+    SetupButtonHover(CloseButton, Theme.Error)
+    
+    UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        Content.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 20)
+    end)
+    
+    local windowTable = {
+        ScreenGui = ScreenGui,
+        MainContainer = MainContainer,
+        Content = Content,
+        Theme = window.Theme
+    }
+    
+    setmetatable(windowTable, TigasLib)
+    return windowTable
+end
 
-	local bg=C("Frame",{Parent=main,Size=UDim2.new(1,0,1,0),BackgroundTransparency=1})
-	local bgGrad=C("UIGradient",{Parent=bg,Rotation=0,Color=ColorSequence.new(Color3.fromRGB(17,17,30),Color3.fromRGB(20,20,37),Color3.fromRGB(17,17,30)),
-		Transparency=NumberSequence.new(NumberSequenceKeypoint.new(0,.86),NumberSequenceKeypoint.new(1,.93))})
-	task.spawn(function() while bg.Parent do for i=0,360,2 do bgGrad.Rotation=i; RunService.RenderStepped:Wait() end end end)
+function TigasLib:CreateSection(options)
+    local section = {
+        Name = options.Name or "Section",
+        Parent = options.Parent or self.Content
+    }
+    
+    local SectionFrame = Create("Frame", {
+        Name = "SectionFrame",
+        Size = UDim2.new(1, 0, 0, 50),
+        BackgroundColor3 = self.Theme.Card,
+        BackgroundTransparency = 0.15,
+        BorderSizePixel = 0,
+        Parent = section.Parent
+    })
+    
+    Create("UICorner", {CornerRadius = UDim.new(0, 12), Parent = SectionFrame})
+    ApplyGlassEffect(SectionFrame, 0.6)
+    
+    local SectionHeader = Create("Frame", {
+        Name = "SectionHeader",
+        Size = UDim2.new(1, 0, 0, 40),
+        BackgroundTransparency = 1,
+        Parent = SectionFrame
+    })
+    
+    local SectionIcon = Create("TextLabel", {
+        Name = "SectionIcon",
+        Size = UDim2.new(0, 30, 0, 30),
+        Position = UDim2.new(0, 10, 0.5, -15),
+        BackgroundTransparency = 1,
+        Text = "◈",
+        TextColor3 = self.Theme.Primary,
+        TextSize = 18,
+        Font = Enum.Font.GothamBold,
+        Parent = SectionHeader
+    })
+    
+    local SectionTitle = Create("TextLabel", {
+        Name = "SectionTitle",
+        Size = UDim2.new(1, -50, 1, 0),
+        Position = UDim2.new(0, 50, 0, 0),
+        BackgroundTransparency = 1,
+        Text = section.Name,
+        TextColor3 = self.Theme.Text,
+        TextSize = 16,
+        Font = Enum.Font.GothamSemibold,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = SectionHeader
+    })
+    
+    local SectionContent = Create("Frame", {
+        Name = "SectionContent",
+        Size = UDim2.new(1, -20, 0, 0),
+        Position = UDim2.new(0, 10, 0, 45),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Parent = SectionFrame
+    })
+    
+    local SectionListLayout = Create("UIListLayout", {
+        Parent = SectionContent,
+        Padding = UDim.new(0, 10)
+    })
+    
+    SectionListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        SectionContent.Size = UDim2.new(1, -20, 0, SectionListLayout.AbsoluteContentSize.Y)
+        SectionFrame.Size = UDim2.new(1, 0, 0, SectionListLayout.AbsoluteContentSize.Y + 55)
+    end)
+    
+    SectionHeader.MouseEnter:Connect(function()
+        Tween(SectionIcon, {TextColor3 = self.Theme.Accent, Rotation = 180}, 0.3)
+    end)
+    
+    SectionHeader.MouseLeave:Connect(function()
+        Tween(SectionIcon, {TextColor3 = self.Theme.Primary, Rotation = 0}, 0.3)
+    end)
+    
+    return {
+        Frame = SectionFrame,
+        Content = SectionContent
+    }
+end
 
-	local top=C("Frame",{Parent=main,Name="TopBar",Size=UDim2.new(1,0,0,50),BackgroundColor3=th.Surface,BackgroundTransparency=.32})
-	C("UICorner",{Parent=top,CornerRadius=UDim.new(0,12)}); Glass(top,th,.7)
-	C("UIGradient",{Parent=top,Rotation=90,Color=ColorSequence.new(th.Primary,th.Accent,th.Secondary,th.Primary),
-		Transparency=NumberSequence.new(NumberSequenceKeypoint.new(0,.74),NumberSequenceKeypoint.new(1,.92))})
+function TigasLib:CreateSlider(options)
+    local slider = {
+        Name = options.Name or "Slider",
+        Min = options.Min or 0,
+        Max = options.Max or 100,
+        Default = options.Default or options.Min or 0,
+        Precision = options.Precision or 0,
+        Callback = options.Callback or function() end,
+        Parent = options.Parent or self.Content
+    }
+    
+    local SliderFrame = Create("Frame", {
+        Name = "SliderFrame",
+        Size = UDim2.new(1, 0, 0, 70),
+        BackgroundColor3 = self.Theme.Card,
+        BackgroundTransparency = 0.2,
+        BorderSizePixel = 0,
+        Parent = slider.Parent
+    })
+    
+    Create("UICorner", {CornerRadius = UDim.new(0, 10), Parent = SliderFrame})
+    ApplyGlassEffect(SliderFrame, 0.7)
+    
+    local SliderHeader = Create("Frame", {
+        Name = "SliderHeader",
+        Size = UDim2.new(1, 0, 0, 25),
+        BackgroundTransparency = 1,
+        Parent = SliderFrame
+    })
+    
+    local SliderTitle = Create("TextLabel", {
+        Name = "SliderTitle",
+        Size = UDim2.new(0.7, 0, 1, 0),
+        Position = UDim2.new(0, 10, 0, 0),
+        BackgroundTransparency = 1,
+        Text = slider.Name,
+        TextColor3 = self.Theme.Text,
+        TextSize = 14,
+        Font = Enum.Font.GothamSemibold,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = SliderHeader
+    })
+    
+    local ValueLabel = Create("TextLabel", {
+        Name = "ValueLabel",
+        Size = UDim2.new(0.25, 0, 1, 0),
+        Position = UDim2.new(0.75, 0, 0, 0),
+        BackgroundTransparency = 1,
+        Text = tostring(slider.Default),
+        TextColor3 = self.Theme.Primary,
+        TextSize = 14,
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Right,
+        Parent = SliderHeader
+    })
+    
+    local SliderContainer = Create("Frame", {
+        Name = "SliderContainer",
+        Size = UDim2.new(1, -20, 0, 30),
+        Position = UDim2.new(0, 10, 0, 35),
+        BackgroundTransparency = 1,
+        Parent = SliderFrame
+    })
+    
+    local Track = Create("Frame", {
+        Name = "Track",
+        Size = UDim2.new(1, 0, 0, 8),
+        Position = UDim2.new(0, 0, 0.5, -4),
+        BackgroundColor3 = self.Theme.Surface,
+        BackgroundTransparency = 0.5,
+        BorderSizePixel = 0,
+        Parent = SliderContainer
+    })
+    
+    Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = Track})
+    ApplyGlassEffect(Track)
+    
+    local Fill = Create("Frame", {
+        Name = "Fill",
+        Size = UDim2.new((slider.Default - slider.Min) / (slider.Max - slider.Min), 0, 1, 0),
+        BackgroundColor3 = self.Theme.Primary,
+        BorderSizePixel = 0,
+        Parent = Track
+    })
+    
+    Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = Fill})
+    
+    local FillGradient = Create("UIGradient", {
+        Parent = Fill,
+        Rotation = 90,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, self.Theme.Primary),
+            ColorSequenceKeypoint.new(0.5, self.Theme.Accent),
+            ColorSequenceKeypoint.new(1, self.Theme.Secondary)
+        })
+    })
+    
+    local SliderButton = Create("TextButton", {
+        Name = "SliderButton",
+        Size = UDim2.new(0, 20, 0, 20),
+        Position = UDim2.new(Fill.Size.X.Scale, -10, 0.5, -10),
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        Text = "",
+        Parent = Track
+    })
+    
+    Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = SliderButton})
+    
+    local ButtonGlow = Create("UIStroke", {
+        Parent = SliderButton,
+        Color = self.Theme.Primary,
+        Thickness = 2,
+        Transparency = 0.3
+    })
+    
+    local ButtonGlowGradient = Create("UIGradient", {
+        Parent = ButtonGlow,
+        Rotation = 90,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, self.Theme.Primary),
+            ColorSequenceKeypoint.new(1, self.Theme.Secondary)
+        })
+    })
+    
+    local isSliding = false
+    
+    local function UpdateSlider(value)
+        local percentage = (value - slider.Min) / (slider.Max - slider.Min)
+        percentage = math.clamp(percentage, 0, 1)
+        
+        Tween(Fill, {Size = UDim2.new(percentage, 0, 1, 0)}, 0.1)
+        Tween(SliderButton, {Position = UDim2.new(percentage, -10, 0.5, -10)}, 0.1)
+        
+        local displayValue = slider.Precision > 0 and string.format("%."..slider.Precision.."f", value) or tostring(math.floor(value))
+        ValueLabel.Text = displayValue
+        slider.Callback(value)
+    end
+    
+    SliderButton.MouseButton1Down:Connect(function()
+        isSliding = true
+        Tween(SliderButton, {Size = UDim2.new(0, 24, 0, 24)}, 0.1)
+        Tween(ButtonGlow, {Thickness = 3}, 0.1)
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            isSliding = false
+            Tween(SliderButton, {Size = UDim2.new(0, 20, 0, 20)}, 0.1)
+            Tween(ButtonGlow, {Thickness = 2}, 0.1)
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if isSliding and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local relativeX = (input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X
+            relativeX = math.clamp(relativeX, 0, 1)
+            local value = slider.Min + (relativeX * (slider.Max - slider.Min))
+            
+            if slider.Precision > 0 then
+                value = math.floor(value * (10 ^ slider.Precision)) / (10 ^ slider.Precision)
+            else
+                value = math.floor(value)
+            end
+            
+            UpdateSlider(value)
+        end
+    end)
+    
+    Track.MouseButton1Down:Connect(function(x, y)
+        local relativeX = (x - Track.AbsolutePosition.X) / Track.AbsoluteSize.X
+        relativeX = math.clamp(relativeX, 0, 1)
+        local value = slider.Min + (relativeX * (slider.Max - slider.Min))
+        
+        if slider.Precision > 0 then
+            value = math.floor(value * (10 ^ slider.Precision)) / (10 ^ slider.Precision)
+        else
+            value = math.floor(value)
+        end
+        
+        UpdateSlider(value)
+    end)
+    
+    UpdateSlider(slider.Default)
+    
+    return {
+        SetValue = function(value)
+            UpdateSlider(math.clamp(value, slider.Min, slider.Max))
+        end,
+        GetValue = function()
+            return tonumber(ValueLabel.Text)
+        end
+    }
+end
 
-	local titleWrap=C("Frame",{Parent=top,Size=UDim2.new(.6,0,1,0),Position=UDim2.fromOffset(14,0),BackgroundTransparency=1})
-	local title=C("TextLabel",{Parent=titleWrap,Size=UDim2.new(1,0,.6,0),Position=UDim2.fromScale(0,.2),BackgroundTransparency=1,Text=tostring(opts.Name or "TigasLib"),
-		TextColor3=th.Text,TextSize=20,Font=Enum.Font.GothamBold,TextXAlignment=Enum.TextXAlignment.Left})
-	C("TextLabel",{Parent=titleWrap,Size=UDim2.new(1,0,.4,0),Position=UDim2.fromScale(0,.6),BackgroundTransparency=1,Text="Futuristic UI",
-		TextColor3=th.SubText,TextSize=12,Font=Enum.Font.Gotham,TextXAlignment=Enum.TextXAlignment.Left})
+function TigasLib:CreateButton(options)
+    local button = {
+        Name = options.Name or "Button",
+        Callback = options.Callback or function() end,
+        Parent = options.Parent or self.Content
+    }
+    
+    local ButtonFrame = Create("Frame", {
+        Name = "ButtonFrame",
+        Size = UDim2.new(1, 0, 0, 45),
+        BackgroundColor3 = self.Theme.Card,
+        BackgroundTransparency = 0.2,
+        BorderSizePixel = 0,
+        Parent = button.Parent
+    })
+    
+    Create("UICorner", {CornerRadius = UDim.new(0, 10), Parent = ButtonFrame})
+    ApplyGlassEffect(ButtonFrame, 0.6)
+    
+    local Button = Create("TextButton", {
+        Name = "Button",
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Text = "",
+        Parent = ButtonFrame
+    })
+    
+    local ButtonLabel = Create("TextLabel", {
+        Name = "ButtonLabel",
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Text = button.Name,
+        TextColor3 = self.Theme.Text,
+        TextSize = 14,
+        Font = Enum.Font.GothamSemibold,
+        Parent = ButtonFrame
+    })
+    
+    local function CreateRippleEffect(button)
+        local Ripple = Create("Frame", {
+            Name = "Ripple",
+            Size = UDim2.new(0, 0, 0, 0),
+            Position = UDim2.new(0.5, 0, 0.5, 0),
+            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+            BackgroundTransparency = 0.8,
+            Parent = button
+        })
+        
+        Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = Ripple})
+        
+        Tween(Ripple, {Size = UDim2.new(2, 0, 2, 0), BackgroundTransparency = 1}, 0.6)
+        delay(0.6, function()
+            Ripple:Destroy()
+        end)
+    end
+    
+    Button.MouseEnter:Connect(function()
+        Tween(ButtonFrame, {BackgroundColor3 = self.Theme.Surface, BackgroundTransparency = 0.1}, 0.2)
+        Tween(ButtonLabel, {TextColor3 = self.Theme.Primary}, 0.2)
+    end)
+    
+    Button.MouseLeave:Connect(function()
+        Tween(ButtonFrame, {BackgroundColor3 = self.Theme.Card, BackgroundTransparency = 0.2}, 0.2)
+        Tween(ButtonLabel, {TextColor3 = self.Theme.Text}, 0.2)
+    end)
+    
+    Button.MouseButton1Click:Connect(function()
+        CreateRippleEffect(ButtonFrame)
+        
+        Tween(ButtonFrame, {Size = UDim2.new(0.98, 0, 0, 43)}, 0.1)
+        Tween(ButtonFrame, {Size = UDim2.new(1, 0, 0, 45)}, 0.1)
+        
+        button.Callback()
+    end)
+    
+    return {
+        Frame = ButtonFrame,
+        SetText = function(text)
+            ButtonLabel.Text = text
+        end
+    }
+end
 
-	local controls=C("Frame",{Parent=top,Size=UDim2.new(.4,0,1,0),Position=UDim2.new(.6,0,0,0),BackgroundTransparency=1})
-	local minBtn=C("TextButton",{Parent=controls,Size=UDim2.fromOffset(30,30),Position=UDim2.new(.5,-40,.5,-15),BackgroundColor3=th.Warning,BackgroundTransparency=.3,Text="_",TextSize=16,Font=Enum.Font.GothamBold,TextColor3=Color3.new(1,1,1)})
-	local closeBtn=C("TextButton",{Parent=controls,Size=UDim2.fromOffset(30,30),Position=UDim2.new(.5,10,.5,-15),BackgroundColor3=th.Error,BackgroundTransparency=.3,Text="×",TextSize=20,Font=Enum.Font.GothamBold,TextColor3=Color3.new(1,1,1)})
-	C("UICorner",{Parent=minBtn,CornerRadius=UDim.new(1,0)}); C("UICorner",{Parent=closeBtn,CornerRadius=UDim.new(1,0)}); Glass(minBtn,th); Glass(closeBtn,th)
+function TigasLib:CreateToggle(options)
+    local toggle = {
+        Name = options.Name or "Toggle",
+        Default = options.Default or false,
+        Callback = options.Callback or function() end,
+        Parent = options.Parent or self.Content
+    }
+    
+    local ToggleFrame = Create("Frame", {
+        Name = "ToggleFrame",
+        Size = UDim2.new(1, 0, 0, 35),
+        BackgroundColor3 = self.Theme.Card,
+        BackgroundTransparency = 0.2,
+        BorderSizePixel = 0,
+        Parent = toggle.Parent
+    })
+    
+    Create("UICorner", {CornerRadius = UDim.new(0, 8), Parent = ToggleFrame})
+    ApplyGlassEffect(ToggleFrame, 0.6)
+    
+    local ToggleLabel = Create("TextLabel", {
+        Name = "ToggleLabel",
+        Size = UDim2.new(0.7, 0, 1, 0),
+        Position = UDim2.new(0, 10, 0, 0),
+        BackgroundTransparency = 1,
+        Text = toggle.Name,
+        TextColor3 = self.Theme.Text,
+        TextSize = 14,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = ToggleFrame
+    })
+    
+    local ToggleContainer = Create("Frame", {
+        Name = "ToggleContainer",
+        Size = UDim2.new(0, 50, 0, 25),
+        Position = UDim2.new(0.9, -50, 0.5, -12.5),
+        BackgroundTransparency = 1,
+        Parent = ToggleFrame
+    })
+    
+    local ToggleBackground = Create("Frame", {
+        Name = "ToggleBackground",
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundColor3 = self.Theme.Surface,
+        BackgroundTransparency = 0.3,
+        BorderSizePixel = 0,
+        Parent = ToggleContainer
+    })
+    
+    Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = ToggleBackground})
+    ApplyGlassEffect(ToggleBackground)
+    
+    local ToggleButton = Create("Frame", {
+        Name = "ToggleButton",
+        Size = UDim2.new(0, 19, 0, 19),
+        Position = UDim2.new(0, 3, 0.5, -9.5),
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        BorderSizePixel = 0,
+        Parent = ToggleBackground
+    })
+    
+    Create("UICorner", {CornerRadius = UDim.new(1, 0), Parent = ToggleButton})
+    
+    local ButtonGlow = Create("UIStroke", {
+        Parent = ToggleButton,
+        Color = self.Theme.Primary,
+        Thickness = 2,
+        Transparency = 0.5
+    })
+    
+    local isToggled = toggle.Default
+    
+    local function UpdateToggle()
+        if isToggled then
+            Tween(ToggleButton, {Position = UDim2.new(1, -22, 0.5, -9.5)}, 0.2, Enum.EasingStyle.Back)
+            Tween(ToggleBackground, {BackgroundColor3 = self.Theme.Primary}, 0.2)
+            Tween(ButtonGlow, {Color = self.Theme.Success}, 0.2)
+            Tween(ToggleLabel, {TextColor3 = self.Theme.Success}, 0.2)
+        else
+            Tween(ToggleButton, {Position = UDim2.new(0, 3, 0.5, -9.5)}, 0.2, Enum.EasingStyle.Back)
+            Tween(ToggleBackground, {BackgroundColor3 = self.Theme.Surface}, 0.2)
+            Tween(ButtonGlow, {Color = self.Theme.Primary}, 0.2)
+            Tween(ToggleLabel, {TextColor3 = self.Theme.Text}, 0.2)
+        end
+        toggle.Callback(isToggled)
+    end
+    
+    ToggleBackground.MouseButton1Click:Connect(function()
+        isToggled = not isToggled
+        UpdateToggle()
+    end)
+    
+    UpdateToggle()
+    
+    return {
+        SetValue = function(value)
+            isToggled = value
+            UpdateToggle()
+        end,
+        GetValue = function()
+            return isToggled
+        end
+    }
+end
 
-	local navBar=C("Frame",{Parent=main,BackgroundTransparency=1,Size=UDim2.new(1,-20,0,38),Position=UDim2.fromOffset(10,56)})
-	local navList=C("UIListLayout",{Parent=navBar,FillDirection=Enum.FillDirection.Horizontal,Padding=UDim.new(0,8),VerticalAlignment=Enum.VerticalAlignment.Center})
-	local navPadding=C("UIPadding",{Parent=navBar,PaddingLeft=UDim.new(0,0),PaddingRight=UDim.new(0,0)})
-
-	local sep=C("Frame",{Parent=main,Size=UDim2.new(1,-20,0,1),Position=UDim2.fromOffset(10,56+38+4),BackgroundColor3=Color3.fromRGB(255,255,255),BackgroundTransparency=.85,BorderSizePixel=0})
-	local sepGrad=C("UIGradient",{Parent=sep,Rotation=0,Color=ColorSequence.new(th.Primary,th.Secondary)})
-
-	local pageFrame=C("Frame",{Parent=main,Name="PageFrame",BackgroundTransparency=1,Size=UDim2.new(1,-20,1,-(50+38+14)),Position=UDim2.fromOffset(10,50+38+10)})
-	local pagesFolder=C("Folder",{Parent=pageFrame,Name="Pages"})
-	local currentTab=nil
-
-	local function hover(b) b.MouseEnter:Connect(function() T(b,{BackgroundTransparency=.08,Size=UDim2.fromOffset(32,32)},.14) end) b.MouseLeave:Connect(function() T(b,{BackgroundTransparency=.3,Size=UDim2.fromOffset(30,30)},.14) end) end
-	hover(minBtn); hover(closeBtn)
-
-	local dragging,dragInput,dragStart,startPos
-	top.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then dragging=true; dragStart=i.Position; startPos=main.Position i.Changed:Connect(function() if i.UserInputState==Enum.UserInputState.End then dragging=false end end) end end)
-	top.InputChanged:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseMovement then dragInput=i end end)
-	UserInputService.InputChanged:Connect(function(i) if i==dragInput and dragging then local d=i.Position-dragStart main.Position=UDim2.new(startPos.X.Scale,startPos.X.Offset+d.X,startPos.Y.Scale,startPos.Y.Offset+d.Y) end end)
-
-	local minimized=false
-	minBtn.MouseButton1Click:Connect(function()
-		minimized=not minimized
-		if minimized then
-			T(main,{Size=UDim2.fromOffset(main.Size.X.Offset,50)},.22)
-			pageFrame.Visible=false
-		else
-			T(main,{Size=UDim2.fromOffset((opts.Size and opts.Size.X.Offset) or 720,(opts.Size and opts.Size.Y.Offset) or 540)},.25,Enum.EasingStyle.Back)
-			pageFrame.Visible=true
-		end
-	end)
-
-	closeBtn.MouseButton1Click:Connect(function()
-		T(main,{Size=UDim2.fromOffset(0,0),Position=UDim2.new(.5,0,.5,0)},.22)
-		task.wait(.22)
-		screen:Destroy()
-	end)
-
-	task.spawn(function()
-		Splash(screen,"TigasLib",th.Primary)
-		main.Size=UDim2.fromOffset(math.floor(main.Size.X.Offset*0.86),math.floor(main.Size.Y.Offset*0.86))
-		main.Position=UDim2.new(.5,-(main.Size.X.Offset/2),.5,-(main.Size.Y.Offset/2)+12)
-		main.BackgroundTransparency=(opts.Transparency or .06)+.18
-		T(main,{Size=UDim2.fromOffset((opts.Size and opts.Size.X.Offset) or 720,(opts.Size and opts.Size.Y.Offset) or 540)},.34,Enum.EasingStyle.Back)
-		T(main,{Position=opts.Position or UDim2.new(.5,-360,.5,-270)},.34)
-		T(main,{BackgroundTransparency=opts.Transparency or .06},.34)
-	end)
-
-	task.delay(300,function() pcall(function() StarterGui:SetCore("SendNotification",{Title="Enjoying TigasLib?",Text="Tap to dismiss.",Duration=6}) end) end)
-
-	local visible=true
-	local function toggleVisibility(force)
-		if force~=nil then visible=force end
-		if visible then
-			main.Visible=true
-			main.BackgroundTransparency=(opts.Transparency or .06)+.22
-			main.Size=UDim2.fromOffset(math.floor(main.Size.X.Offset*0.9),math.floor(main.Size.Y.Offset*0.9))
-			T(main,{BackgroundTransparency=opts.Transparency or .06},.2)
-			T(main,{Size=UDim2.fromOffset((opts.Size and opts.Size.X.Offset) or 720,(opts.Size and opts.Size.Y.Offset) or 540),Position=opts.Position or UDim2.new(.5,-360,.5,-270)},.25,Enum.EasingStyle.Back)
-		else
-			T(main,{BackgroundTransparency=1},.16)
-			T(main,{Size=UDim2.fromOffset(math.floor(main.Size.X.Offset*0.96),math.floor(main.Size.Y.Offset*0.96)),Position=UDim2.new(.5,-352,.5,-262)},.16)
-			task.delay(.16,function() main.Visible=false end)
-		end
-	end
-	UserInputService.InputBegan:Connect(function(i) if i.KeyCode==keybind and not i:IsModifierKeyDown() then visible=not visible; toggleVisibility() end end)
-
-	local function makeTabButton(text)
-		local wrap=C("Frame",{Parent=navBar,BackgroundColor3=th.Card,BackgroundTransparency=.18,Size=UDim2.fromOffset(122,34)})
-		C("UICorner",{Parent=wrap,CornerRadius=UDim.new(0,8)})
-		Glass(wrap,th,.86)
-		local hl=C("Frame",{Parent=wrap,Size=UDim2.new(0,0,0,2),Position=UDim2.new(0,0,1,0),BackgroundColor3=th.Primary,BackgroundTransparency=.2,BorderSizePixel=0})
-		local btn=C("TextButton",{Parent=wrap,BackgroundTransparency=1,Size=UDim2.new(1,0,1,0),Text=text,TextColor3=th.Text,TextSize=14,Font=Enum.Font.GothamSemibold})
-		btn.MouseEnter:Connect(function() T(wrap,{BackgroundColor3=th.Surface,BackgroundTransparency=.06},.12); T(btn,{TextColor3=th.Primary},.12) end)
-		btn.MouseLeave:Connect(function() if wrap:GetAttribute("Active") then return end T(wrap,{BackgroundColor3=th.Card,BackgroundTransparency=.18},.12); T(btn,{TextColor3=th.Text},.12) end)
-		return wrap,btn,hl
-	end
-
-	local function createPage(name)
-		local page=C("ScrollingFrame",{Parent=pagesFolder,Name=name.."_Page",Visible=false,ClipsDescendants=true,BackgroundTransparency=1,Size=UDim2.new(1,0,1,0),CanvasSize=UDim2.new(0,0,0,0),ScrollBarThickness=4,ScrollBarImageColor3=th.Primary,ScrollBarImageTransparency=.72})
-		local list=C("UIListLayout",{Parent=page,Padding=UDim.new(0,12)})
-		list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() page.CanvasSize=UDim2.new(0,0,0,list.AbsoluteContentSize.Y+20) end)
-		return page
-	end
-
-	local api=setmetatable({
-		ScreenGui=screen, Main=main, Theme=th,
-		GetToggleKey=function() return keybind end,
-		SetToggleKey=function(_, key) keybind=key or Enum.KeyCode.K end
-	}, TigasLib)
-
-	function api:CreateTab(name)
-		local wrap,btn,hl=makeTabButton(tostring(name or "Tab"))
-		local page=createPage(name or "Tab")
-		btn.MouseButton1Click:Connect(function()
-			for _,w in ipairs(navBar:GetChildren()) do if w:IsA("Frame") then w:SetAttribute("Active",false); T(w,{BackgroundColor3=th.Card,BackgroundTransparency=.18},.12); if w:FindFirstChildOfClass("Frame") then T(w:FindFirstChildOfClass("Frame"),{Size=UDim2.new(0,0,0,2)},.14) end end end
-			for _,p in ipairs(pagesFolder:GetChildren()) do p.Visible=false end
-			wrap:SetAttribute("Active",true)
-			T(hl,{Size=UDim2.new(1,0,0,2)},.14)
-			page.Visible=true
-			page.Position=UDim2.new(0,8,0,6); page.Size=UDim2.new(1,-16,1,-12)
-			T(page,{Position=UDim2.new(0,0,0,0),Size=UDim2.new(1,0,1,0)},.18)
-			currentTab=page
-		end)
-		if not currentTab then btn:Activate(); btn.MouseButton1Click:Fire() end
-		return page
-	end
-
-	function api:CreateSection(o)
-		o=o or {}
-		local parent=o.Parent or currentTab or self:CreateTab("Main")
-		if not currentTab then parent.Visible=true; currentTab=parent end
-		local frame=C("Frame",{Parent=parent,Size=UDim2.new(1,0,0,54),BackgroundColor3=th.Card,BackgroundTransparency=.12})
-		C("UICorner",{Parent=frame,CornerRadius=UDim.new(0,10)}); Glass(frame,th,.72)
-		local head=C("Frame",{Parent=frame,Size=UDim2.new(1,0,0,40),BackgroundTransparency=1})
-		local icon=C("TextLabel",{Parent=head,Size=UDim2.fromOffset(30,30),Position=UDim2.new(0,10,0.5,-15),BackgroundTransparency=1,Text="◈",TextColor3=th.Primary,TextSize=18,Font=Enum.Font.GothamBold})
-		C("TextLabel",{Parent=head,Size=UDim2.new(1,-50,1,0),Position=UDim2.fromOffset(50,0),BackgroundTransparency=1,Text=tostring(o.Name or "Section"),TextColor3=th.Text,TextSize=16,Font=Enum.Font.GothamSemibold,TextXAlignment=Enum.TextXAlignment.Left})
-		local content=C("Frame",{Parent=frame,Name="Content",Size=UDim2.new(1,-20,0,0),Position=UDim2.fromOffset(10,46),BackgroundTransparency=1})
-		local list=C("UIListLayout",{Parent=content,Padding=UDim.new(0,10)})
-		list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() content.Size=UDim2.new(1,-20,0,list.AbsoluteContentSize.Y); frame.Size=UDim2.new(1,0,0,list.AbsoluteContentSize.Y+58) end)
-		head.MouseEnter:Connect(function() T(icon,{TextColor3=th.Accent,Rotation=180},.2) end)
-		head.MouseLeave:Connect(function() T(icon,{TextColor3=th.Primary,Rotation=0},.2) end)
-		return {Frame=frame,Content=content}
-	end
-
-	function api:CreateSlider(o)
-		o=o or {}
-		local p=o.Parent or currentTab or self:CreateTab("Main")
-		local min,max=o.Min or 0,o.Max or 100
-		local prec=o.Precision or 0
-		local def=(o.Default~=nil) and o.Default or min
-		local cb=o.Callback or function()end
-		local f=C("Frame",{Parent=p,Size=UDim2.new(1,0,0,72),BackgroundColor3=th.Card,BackgroundTransparency=.16})
-		C("UICorner",{Parent=f,CornerRadius=UDim.new(0,10)}); Glass(f,th,.72)
-		local hdr=C("Frame",{Parent=f,Size=UDim2.new(1,0,0,26),BackgroundTransparency=1})
-		C("TextLabel",{Parent=hdr,Size=UDim2.new(.7,0,1,0),Position=UDim2.fromOffset(10,0),BackgroundTransparency=1,Text=tostring(o.Name or "Slider"),TextColor3=th.Text,TextSize=14,Font=Enum.Font.GothamSemibold,TextXAlignment=Enum.TextXAlignment.Left})
-		local vLbl=C("TextLabel",{Parent=hdr,Size=UDim2.new(.25,0,1,0),Position=UDim2.new(.75,0,0,0),BackgroundTransparency=1,Text=tostring(def),TextColor3=th.Primary,TextSize=14,Font=Enum.Font.GothamBold,TextXAlignment=Enum.TextXAlignment.Right})
-		local container=C("Frame",{Parent=f,Size=UDim2.new(1,-20,0,32),Position=UDim2.fromOffset(10,34),BackgroundTransparency=1})
-		local track=C("Frame",{Parent=container,Size=UDim2.new(1,0,0,8),Position=UDim2.new(0,0,.5,-4),BackgroundColor3=th.Surface,BackgroundTransparency=.42})
-		C("UICorner",{Parent=track,CornerRadius=UDim.new(1,0)}); Glass(track,th)
-		local fill=C("Frame",{Parent=track,Size=UDim2.new((def-min)/(max-min),0,1,0),BackgroundColor3=th.Primary})
-		C("UICorner",{Parent=fill,CornerRadius=UDim.new(1,0)})
-		C("UIGradient",{Parent=fill,Rotation=90,Color=ColorSequence.new(th.Primary,th.Accent,th.Secondary)})
-		local knob=C("TextButton",{Parent=track,Size=UDim2.fromOffset(20,20),Position=UDim2.new(fill.Size.X.Scale,-10,.5,-10),BackgroundColor3=Color3.new(1,1,1),Text=""})
-		C("UICorner",{Parent=knob,CornerRadius=UDim.new(1,0)}); local kGlow=C("UIStroke",{Parent=knob,Color=th.Primary,Thickness=2,Transparency=.3})
-		C("UIGradient",{Parent=kGlow,Rotation=90,Color=ColorSequence.new(th.Primary,th.Secondary)})
-		local sliding=false
-		local function r(v) if prec>0 then local m=10^prec return math.floor(v*m)/m end return math.floor(v) end
-		local function set(v) local pct=math.clamp((v-min)/(max-min),0,1) T(fill,{Size=UDim2.new(pct,0,1,0)},.1) T(knob,{Position=UDim2.new(pct,-10,.5,-10)},.1) vLbl.Text=(prec>0) and string.format("%."..prec.."f",v) or tostring(math.floor(v)) cb(v) end
-		knob.MouseButton1Down:Connect(function() sliding=true T(knob,{Size=UDim2.fromOffset(24,24)},.08) T(kGlow,{Thickness=3},.08) end)
-		UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then sliding=false T(knob,{Size=UDim2.fromOffset(20,20)},.08) T(kGlow,{Thickness=2},.08) end end)
-		UserInputService.InputChanged:Connect(function(i) if sliding and i.UserInputType==Enum.UserInputType.MouseMovement then local rx=(i.Position.X-track.AbsolutePosition.X)/track.AbsoluteSize.X set(r(min+math.clamp(rx,0,1)*(max-min))) end end)
-		track.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then local rx=(i.Position.X-track.AbsolutePosition.X)/track.AbsoluteSize.X set(r(min+math.clamp(rx,0,1)*(max-min))) end end)
-		set(def)
-		return {SetValue=function(v) set(math.clamp(v,min,max)) end, GetValue=function() return tonumber(vLbl.Text) end}
-	end
-
-	function api:CreateButton(o)
-		o=o or {}
-		local p=o.Parent or currentTab or self:CreateTab("Main")
-		local cb=o.Callback or function()end
-		local f=C("Frame",{Parent=p,Size=UDim2.new(1,0,0,44),BackgroundColor3=th.Card,BackgroundTransparency=.14})
-		C("UICorner",{Parent=f,CornerRadius=UDim.new(0,10)}); Glass(f,th,.72)
-		local click=C("TextButton",{Parent=f,Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,Text=""})
-		local lbl=C("TextLabel",{Parent=f,Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,Text=tostring(o.Name or "Button"),TextColor3=th.Text,TextSize=14,Font=Enum.Font.GothamSemibold})
-		local function ripple() local r=C("Frame",{Parent=f,Size=UDim2.new(0,0,0,0),Position=UDim2.fromScale(.5,.5),BackgroundColor3=Color3.new(1,1,1),BackgroundTransparency=.8}) C("UICorner",{Parent=r,CornerRadius=UDim.new(1,0)}); T(r,{Size=UDim2.new(2,0,2,0),BackgroundTransparency=1},.5); task.delay(.5,function() r:Destroy() end) end
-		click.MouseEnter:Connect(function() T(f,{BackgroundColor3=th.Surface,BackgroundTransparency=.06},.12) T(lbl,{TextColor3=th.Primary},.12) end)
-		click.MouseLeave:Connect(function() T(f,{BackgroundColor3=th.Card,BackgroundTransparency=.14},.12) T(lbl,{TextColor3=th.Text},.12) end)
-		click.MouseButton1Click:Connect(function() ripple() T(f,{Size=UDim2.new(.985,0,0,42)},.07) T(f,{Size=UDim2.new(1,0,0,44)},.07) cb() end)
-		return {Frame=f,SetText=function(t) lbl.Text=t end}
-	end
-
-	function api:CreateToggle(o)
-		o=o or {}
-		local p=o.Parent or currentTab or self:CreateTab("Main")
-		local on=o.Default or false
-		local cb=o.Callback or function()end
-		local f=C("Frame",{Parent=p,Size=UDim2.new(1,0,0,36),BackgroundColor3=th.Card,BackgroundTransparency=.14})
-		C("UICorner",{Parent=f,CornerRadius=UDim.new(0,8)}); Glass(f,th,.72)
-		local lbl=C("TextLabel",{Parent=f,Size=UDim2.new(.72,0,1,0),Position=UDim2.fromOffset(10,0),BackgroundTransparency=1,Text=tostring(o.Name or "Toggle"),TextColor3=th.Text,TextSize=14,Font=Enum.Font.Gotham,TextXAlignment=Enum.TextXAlignment.Left})
-		local wrap=C("Frame",{Parent=f,Size=UDim2.fromOffset(56,24),Position=UDim2.new(.9,-56,.5,-12),BackgroundTransparency=1})
-		local bg=C("Frame",{Parent=wrap,Size=UDim2.new(1,0,1,0),BackgroundColor3=th.Surface,BackgroundTransparency=.28})
-		C("UICorner",{Parent=bg,CornerRadius=UDim.new(1,0)}); Glass(bg,th)
-		local knob=C("Frame",{Parent=bg,Size=UDim2.fromOffset(20,20),Position=UDim2.new(0,2,.5,-10),BackgroundColor3=Color3.new(1,1,1)})
-		C("UICorner",{Parent=knob,CornerRadius=UDim.new(1,0)}); local glow=C("UIStroke",{Parent=knob,Color=th.Primary,Thickness=2,Transparency=.5})
-		local function refresh() if on then T(knob,{Position=UDim2.new(1,-22,.5,-10)},.18,Enum.EasingStyle.Back) T(bg,{BackgroundColor3=th.Primary},.18) T(glow,{Color=th.Success},.18) T(lbl,{TextColor3=th.Success},.18) else T(knob,{Position=UDim2.new(0,2,.5,-10)},.18,Enum.EasingStyle.Back) T(bg,{BackgroundColor3=th.Surface},.18) T(glow,{Color=th.Primary},.18) T(lbl,{TextColor3=th.Text},.18) end cb(on) end
-		bg.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then on=not on refresh() end end)
-		refresh()
-		return {SetValue=function(v) on=v; refresh() end, GetValue=function() return on end}
-	end
-
-	function api:CreateLabel(o)
-		o=o or {}
-		local p=o.Parent or currentTab or self:CreateTab("Main")
-		local f=C("Frame",{Parent=p,Size=UDim2.new(1,0,0,24),BackgroundTransparency=1})
-		local t=C("TextLabel",{Parent=f,Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,Text=tostring(o.Text or "Label"),TextColor3=th.SubText,TextSize=13,Font=Enum.Font.Gotham,TextXAlignment=Enum.TextXAlignment.Left})
-		return {SetText=function(x) t.Text=x end}
-	end
-
-	return api
+function TigasLib:CreateLabel(options)
+    local label = {
+        Text = options.Text or "Label",
+        Parent = options.Parent or self.Content
+    }
+    
+    local LabelFrame = Create("Frame", {
+        Name = "LabelFrame",
+        Size = UDim2.new(1, 0, 0, 25),
+        BackgroundTransparency = 1,
+        Parent = label.Parent
+    })
+    
+    local Label = Create("TextLabel", {
+        Name = "Label",
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Text = label.Text,
+        TextColor3 = self.Theme.SubText,
+        TextSize = 13,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = LabelFrame
+    })
+    
+    return {
+        SetText = function(text)
+            Label.Text = text
+        end
+    }
 end
 
 return TigasLib
