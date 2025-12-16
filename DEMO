@@ -1,0 +1,304 @@
+--Updated: Optional Default Key System + Stability Improvements--
+--Author: Tigas --
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+
+local KaylaUI = {
+    _Windows = {},
+    _Controls = {},
+    _Connections = {},
+}
+
+KaylaUI.Theme = {
+    Background = Color3.fromRGB(18,18,18),
+    Section = Color3.fromRGB(24,24,24),
+    Border = Color3.fromRGB(35,35,35),
+    Text = Color3.fromRGB(235,235,235),
+    TextDim = Color3.fromRGB(160,160,160),
+    Accent = Color3.fromRGB(155, 89, 182),
+}
+
+local function New(class, props)
+    local obj = Instance.new(class)
+    for k,v in pairs(props) do
+        obj[k] = v
+    end
+    return obj
+end
+
+function KaylaUI:_Connect(signal, fn)
+    local c = signal:Connect(fn)
+    table.insert(self._Connections, c)
+    return c
+end
+
+function KaylaUI:_DisconnectAll()
+    for _,c in ipairs(self._Connections) do
+        pcall(function() c:Disconnect() end)
+    end
+    table.clear(self._Connections)
+end
+
+function KaylaUI:RequireKey(options)
+    options = options or {}
+
+    local validKeys = options.Keys or {}
+    local title = options.Title or "Key System"
+    local saveKey = options.SaveKey
+    local fileName = options.FileName or "kaylaui.key"
+
+    if saveKey and isfile and isfile(fileName) then
+        local saved = readfile(fileName)
+        for _,k in ipairs(validKeys) do
+            if k == saved then
+                return true
+            end
+        end
+    end
+
+    local passed = false
+
+    local win = self:CreateWindow({
+        Title = title,
+        Size = UDim2.fromOffset(360, 190),
+        LockInput = true
+    })
+
+    local tab = win:AddTab("Key")
+    local sec = tab:AddSection("Enter Access Key")
+
+    sec:AddTextbox("Key", "", function(text)
+        for _,k in ipairs(validKeys) do
+            if text == k then
+                passed = true
+                if saveKey and writefile then
+                    writefile(fileName, text)
+                end
+                win:Destroy()
+                break
+            end
+        end
+    end)
+
+    repeat task.wait() until passed
+end
+
+function KaylaUI:CreateWindow(opts)
+    opts = opts or {}
+
+    local Window = {}
+    Window.Tabs = {}
+
+    local blur
+    if not opts.NoBlur then
+        blur = Instance.new("BlurEffect")
+        blur.Size = 0
+        blur.Parent = Lighting
+        TweenService:Create(blur, TweenInfo.new(0.3), {Size = 18}):Play()
+    end
+
+    local gui = New("ScreenGui", {
+        ResetOnSpawn = false,
+        Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+    })
+
+    local main = New("Frame", {
+        Size = opts.Size or UDim2.fromOffset(520, 420),
+        Position = UDim2.fromScale(0.5, 0.5),
+        AnchorPoint = Vector2.new(0.5,0.5),
+        BackgroundColor3 = KaylaUI.Theme.Background,
+        BorderColor3 = KaylaUI.Theme.Border,
+        Parent = gui
+    })
+
+    New("UICorner", {CornerRadius = UDim.new(0,12), Parent = main})
+
+    local title = New("TextLabel", {
+        Size = UDim2.new(1,-20,0,40),
+        Position = UDim2.fromOffset(10,0),
+        BackgroundTransparency = 1,
+        Text = opts.Title or "KaylaUI",
+        Font = Enum.Font.GothamBold,
+        TextSize = 16,
+        TextColor3 = KaylaUI.Theme.Text,
+        TextXAlignment = Left,
+        Parent = main
+    })
+
+    do
+        local dragging, dragStart, startPos
+        title.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                dragStart = i.Position
+                startPos = main.Position
+            end
+        end)
+        UIS.InputChanged:Connect(function(i)
+            if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
+                local delta = i.Position - dragStart
+                main.Position = startPos + UDim2.fromOffset(delta.X, delta.Y)
+            end
+        end)
+        UIS.InputEnded:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+            end
+        end)
+    end
+
+    local tabHolder = New("Frame", {
+        Size = UDim2.new(0,120,1,-50),
+        Position = UDim2.fromOffset(0,40),
+        BackgroundTransparency = 1,
+        Parent = main
+    })
+
+    local tabLayout = New("UIListLayout", {
+        Padding = UDim.new(0,6),
+        Parent = tabHolder
+    })
+    local content = New("Frame", {
+        Size = UDim2.new(1,-140,1,-50),
+        Position = UDim2.fromOffset(130,40),
+        BackgroundTransparency = 1,
+        Parent = main
+    })
+
+    function Window:AddTab(name)
+        local Tab = {}
+
+        local btn = New("TextButton", {
+            Size = UDim2.new(1,0,0,36),
+            BackgroundColor3 = KaylaUI.Theme.Section,
+            Text = name,
+            Font = Enum.Font.Gotham,
+            TextSize = 14,
+            TextColor3 = KaylaUI.Theme.TextDim,
+            Parent = tabHolder
+        })
+        New("UICorner", {CornerRadius = UDim.new(0,8), Parent = btn})
+
+        local page = New("ScrollingFrame", {
+            Size = UDim2.fromScale(1,1),
+            CanvasSize = UDim2.new(),
+            ScrollBarImageTransparency = 1,
+            Visible = false,
+            Parent = content
+        })
+
+        local layout = New("UIListLayout", {
+            Padding = UDim.new(0,10),
+            Parent = page
+        })
+
+        layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            page.CanvasSize = UDim2.fromOffset(0, layout.AbsoluteContentSize.Y + 10)
+        end)
+
+        btn.MouseButton1Click:Connect(function()
+            for _,t in ipairs(Window.Tabs) do
+                t.Page.Visible = false
+                t.Button.TextColor3 = KaylaUI.Theme.TextDim
+            end
+            page.Visible = true
+            btn.TextColor3 = KaylaUI.Theme.Text
+        end)
+
+        function Tab:AddSection(text)
+            local Section = {}
+
+            local frame = New("Frame", {
+                Size = UDim2.new(1,0,0,40),
+                AutomaticSize = Enum.AutomaticSize.Y,
+                BackgroundColor3 = KaylaUI.Theme.Section,
+                BorderColor3 = KaylaUI.Theme.Border,
+                Parent = page
+            })
+            New("UICorner", {CornerRadius = UDim.new(0,10), Parent = frame})
+
+            local label = New("TextLabel", {
+                Size = UDim2.new(1,-16,0,30),
+                Position = UDim2.fromOffset(8,0),
+                BackgroundTransparency = 1,
+                Text = text,
+                Font = Enum.Font.GothamBold,
+                TextSize = 14,
+                TextColor3 = KaylaUI.Theme.Text,
+                TextXAlignment = Left,
+                Parent = frame
+            })
+
+            local holder = New("Frame", {
+                Size = UDim2.new(1,-16,0,0),
+                Position = UDim2.fromOffset(8,30),
+                AutomaticSize = Enum.AutomaticSize.Y,
+                BackgroundTransparency = 1,
+                Parent = frame
+            })
+
+            local list = New("UIListLayout", {
+                Padding = UDim.new(0,8),
+                Parent = holder
+            })
+
+            function Section:AddButton(text, callback)
+                local btn = New("TextButton", {
+                    Size = UDim2.new(1,0,0,32),
+                    BackgroundColor3 = KaylaUI.Theme.Background,
+                    Text = text,
+                    Font = Enum.Font.Gotham,
+                    TextSize = 13,
+                    TextColor3 = KaylaUI.Theme.Text,
+                    Parent = holder
+                })
+                New("UICorner", {CornerRadius = UDim.new(0,8), Parent = btn})
+                btn.MouseButton1Click:Connect(function()
+                    task.spawn(callback)
+                end)
+            end
+
+            function Section:AddTextbox(text, default, callback)
+                local box = New("TextBox", {
+                    Size = UDim2.new(1,0,0,32),
+                    BackgroundColor3 = KaylaUI.Theme.Background,
+                    Text = default or "",
+                    PlaceholderText = text,
+                    Font = Enum.Font.Gotham,
+                    TextSize = 13,
+                    TextColor3 = KaylaUI.Theme.Text,
+                    ClearTextOnFocus = false,
+                    Parent = holder
+                })
+                New("UICorner", {CornerRadius = UDim.new(0,8), Parent = box})
+                box.FocusLost:Connect(function()
+                    task.spawn(callback, box.Text)
+                end)
+            end
+
+            return Section
+        end
+
+        table.insert(Window.Tabs, {Button = btn, Page = page})
+        if #Window.Tabs == 1 then
+            btn.MouseButton1Click:Fire()
+        end
+        return Tab
+    end
+
+    function Window:Destroy()
+        gui:Destroy()
+        if blur then blur:Destroy() end
+        KaylaUI:_DisconnectAll()
+    end
+
+    table.insert(KaylaUI._Windows, Window)
+    return Window
+end
+
+return KaylaUI
