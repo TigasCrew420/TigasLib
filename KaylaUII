@@ -1,5 +1,5 @@
-
 local UIS = game:GetService("UserInputService")
+
 local __KAYLA_IS_MOBILE = UIS.TouchEnabled and not UIS.KeyboardEnabled and not UIS.MouseEnabled
 local __KAYLA_DEVICE_OVERRIDE = nil
 
@@ -1476,3 +1476,78 @@ function Section:AddColorPicker(text, defaultColor, callback, opts)
 end
 
 return KaylaUI
+
+task.spawn(function()
+    repeat task.wait() until Kayla_GetDevice
+
+    if Kayla_GetDevice() ~= "Mobile" then return end
+
+    local UIS = game:GetService("UserInputService")
+    local TweenService = game:GetService("TweenService")
+    local gui = (gethui and gethui()) or game:GetService("CoreGui")
+
+    local bubble = Instance.new("TextButton")
+    bubble.Name = "KaylaUI_FloatingBubble"
+    bubble.Size = UDim2.fromOffset(52, 52)
+    bubble.Position = UDim2.new(0, 20, 0.5, -26)
+    bubble.BackgroundColor3 = Color3.fromRGB(60,60,70)
+    bubble.Text = "☰"
+    bubble.Font = Enum.Font.GothamBold
+    bubble.TextSize = 24
+    bubble.TextColor3 = Color3.new(1,1,1)
+    bubble.BorderSizePixel = 0
+    bubble.Visible = false
+    Instance.new("UICorner", bubble).CornerRadius = UDim.new(1,0)
+    bubble.Parent = gui
+
+    local dragging, dragOffset
+
+    bubble.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragOffset = bubble.Position - UDim2.fromOffset(input.Position.X, input.Position.Y)
+        end
+    end)
+
+    UIS.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.Touch then
+            bubble.Position = UDim2.fromOffset(
+                input.Position.X + dragOffset.X.Offset,
+                input.Position.Y + dragOffset.Y.Offset
+            )
+        end
+    end)
+
+    UIS.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+            local x = bubble.Position.X.Offset
+            local snapX = x < workspace.CurrentCamera.ViewportSize.X / 2 and 12 or workspace.CurrentCamera.ViewportSize.X - 64
+            TweenService:Create(bubble, TweenInfo.new(0.25), {
+                Position = UDim2.fromOffset(snapX, bubble.Position.Y.Offset)
+            }):Play()
+        end
+    end)
+
+    local function hookWindows()
+        for _, g in ipairs(gui:GetChildren()) do
+            if g:IsA("ScreenGui") and g.Name:find("Kayla") then
+                for _, f in ipairs(g:GetDescendants()) do
+                    if f:IsA("Frame") and f.Size.X.Offset > 400 then
+                        f.Size = UDim2.fromOffset(360, 420)
+                        bubble.Visible = true
+
+                        bubble.MouseButton1Click:Connect(function()
+                            f.Visible = not f.Visible
+                        end)
+                    end
+                end
+            end
+        end
+    end
+
+    task.wait(1)
+    hookWindows()
+end)
+
+
