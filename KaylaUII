@@ -1,3 +1,61 @@
+
+local UIS = game:GetService("UserInputService")
+local __KAYLA_IS_MOBILE = UIS.TouchEnabled and not UIS.KeyboardEnabled and not UIS.MouseEnabled
+local __KAYLA_DEVICE_OVERRIDE = nil
+
+local function Kayla_GetDevice()
+    if __KAYLA_DEVICE_OVERRIDE then
+        return __KAYLA_DEVICE_OVERRIDE
+    end
+    return __KAYLA_IS_MOBILE and "Mobile" or "PC"
+end
+
+if __KAYLA_IS_MOBILE then
+    local cg = (gethui and gethui()) or game:GetService("CoreGui")
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "KaylaUI_DeviceChooser"
+    gui.IgnoreGuiInset = true
+    gui.ResetOnSpawn = false
+    gui.Parent = cg
+
+    local f = Instance.new("Frame", gui)
+    f.Size = UDim2.fromScale(0.6, 0.25)
+    f.Position = UDim2.fromScale(0.2, 0.375)
+    f.BackgroundColor3 = Color3.fromRGB(18,18,20)
+    f.BorderSizePixel = 0
+    Instance.new("UICorner", f)
+
+    local t = Instance.new("TextLabel", f)
+    t.Size = UDim2.fromScale(1, 0.35)
+    t.BackgroundTransparency = 1
+    t.Text = "Choose UI Mode"
+    t.Font = Enum.Font.GothamBold
+    t.TextSize = 20
+    t.TextColor3 = Color3.new(1,1,1)
+
+    local function btn(txt, mode, pos)
+        local b = Instance.new("TextButton", f)
+        b.Size = UDim2.fromScale(0.42, 0.45)
+        b.Position = pos
+        b.Text = txt
+        b.Font = Enum.Font.GothamBold
+        b.TextSize = 18
+        b.BackgroundColor3 = Color3.fromRGB(35,35,40)
+        b.TextColor3 = Color3.new(1,1,1)
+        b.BorderSizePixel = 0
+        Instance.new("UICorner", b)
+        b.MouseButton1Click:Connect(function()
+            __KAYLA_DEVICE_OVERRIDE = mode
+            gui:Destroy()
+        end)
+    end
+
+    btn("📱 Mobile", "Mobile", UDim2.fromScale(0.05, 0.45))
+    btn("💻 PC", "PC", UDim2.fromScale(0.53, 0.45))
+
+    repeat task.wait() until __KAYLA_DEVICE_OVERRIDE
+end
+
 local Players      = game:GetService("Players")
 local UIS          = game:GetService("UserInputService")
 local RunService   = game:GetService("RunService")
@@ -10,12 +68,6 @@ local PlayerGui    = LocalPlayer and LocalPlayer:FindFirstChildOfClass("PlayerGu
 local CONFIG_FOLDER       = "KaylaUI"
 local DEFAULT_CONFIG_NAME = "default"
 
-local UIS = game:GetService("UserInputService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
-local IS_MOBILE = UIS.TouchEnabled and not UIS.KeyboardEnabled
-
 local KaylaUI   = {}
 KaylaUI.__index = KaylaUI
 local Window    = {}
@@ -25,7 +77,6 @@ Tab.__index     = Tab
 local Section   = {}
 Section.__index = Section
 
--- LESS COLOR, MORE OBSIDIAN
 KaylaUI.Theme = {
     Background = Color3.fromRGB(13, 13, 15),
     Topbar     = Color3.fromRGB(18, 18, 20),
@@ -46,7 +97,6 @@ local function GetGuiParent()
     local ok, CoreGui = pcall(function()
         return game:GetService("CoreGui")
     end)
-end
     if ok and CoreGui then return CoreGui end
     return workspace
 end
@@ -283,12 +333,7 @@ end
 function KaylaUI:CreateWindow(opts)
     opts = opts or {}
     local title     = opts.Title or "KaylaUI"
-    local size
-    if IS_MOBILE then
-        size = opts.Size or UDim2.new(0.95, 0, 0.9, 0)
-    else
-        size = opts.Size or UDim2.fromOffset(560, 360)
-    end
+    local size      = opts.Size or UDim2.fromOffset(560, 360)
     local toggleKey = opts.ToggleKey or Enum.KeyCode.RightControl
     local id        = opts.Id or title
     local showBlur  = opts.ShowBlur
@@ -364,9 +409,6 @@ function KaylaUI:CreateWindow(opts)
     })
 
     local tabsBar = New("Frame", {
-        AnchorPoint = IS_MOBILE and Vector2.new(0,1) or Vector2.new(0,0),
-        Position = IS_MOBILE and UDim2.new(0,0,1,0) or UDim2.new(0,0,0,0),
-        Size = IS_MOBILE and UDim2.new(1,0,0,48) or UDim2.new(0,160,1,0),
         Parent = contentHolder,
         Size = UDim2.new(0, 160, 1, 0),
         BackgroundColor3 = Color3.fromRGB(16,16,18),
@@ -386,8 +428,6 @@ function KaylaUI:CreateWindow(opts)
     })
 
     local tabContentArea = New("Frame", {
-        Position = IS_MOBILE and UDim2.new(0,0,0,4) or UDim2.new(0,160,0,4),
-        Size = IS_MOBILE and UDim2.new(1,0,1,-56) or UDim2.new(1,-164,1,-8),
         Parent = contentHolder,
         Position = UDim2.new(0, 160, 0, 4),
         Size = UDim2.new(1, -164, 1, -8),
@@ -399,25 +439,6 @@ function KaylaUI:CreateWindow(opts)
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundTransparency = 1,
     })
-
-    
-    if IS_MOBILE then
-        local toggleBtn = Instance.new("TextButton")
-        toggleBtn.Parent = topbar
-        toggleBtn.Size = UDim2.fromOffset(32, 28)
-        toggleBtn.Position = UDim2.new(1, -40, 0, 2)
-        toggleBtn.Text = "≡"
-        toggleBtn.Font = KaylaUI.Theme.Font
-        toggleBtn.TextSize = 18
-        toggleBtn.BackgroundColor3 = KaylaUI.Theme.Section
-        toggleBtn.TextColor3 = KaylaUI.Theme.Text
-        toggleBtn.BorderSizePixel = 0
-        Instance.new("UICorner", toggleBtn)
-
-        toggleBtn.MouseButton1Click:Connect(function()
-            windowObj:SetVisible(not windowObj._Visible)
-        end)
-    end
 
     local windowObj = setmetatable({
         _Gui       = screenGui,
@@ -441,7 +462,7 @@ function KaylaUI:CreateWindow(opts)
         local dragStart, startPos
 
         topbar.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
                 dragging = true
                 dragStart = input.Position
                 startPos = mainFrame.Position
@@ -449,13 +470,13 @@ function KaylaUI:CreateWindow(opts)
         end)
 
         topbar.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
                 dragging = false
             end
         end)
 
         UIS.InputChanged:Connect(function(input)
-            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
                 local delta = input.Position - dragStart
                 mainFrame.Position = UDim2.new(
                     startPos.X.Scale, startPos.X.Offset + delta.X,
@@ -466,7 +487,6 @@ function KaylaUI:CreateWindow(opts)
     end
 
     -- Toggle visibility
-    if not IS_MOBILE then
     UIS.InputBegan:Connect(function(input, gp)
         if gp then return end
         if input.KeyCode == toggleKey then
@@ -915,20 +935,20 @@ function Section:AddSlider(text, min, max, default, callback, opts)
     end
 
     barBack.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             SetValueFromX(input.Position.X)
         end
     end)
 
     barBack.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
         end
     end)
 
     UIS.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             SetValueFromX(input.Position.X)
         end
     end)
@@ -1191,8 +1211,7 @@ function Section:AddKeybind(text, defaultKey, callback, opts)
         waiting = true
         button.Text = "Press key..."
         local conn
-        conn = if not IS_MOBILE then
-    UIS.InputBegan:Connect(function(input, gp)
+        conn = UIS.InputBegan:Connect(function(input, gp)
             if gp then return end
             if input.KeyCode ~= Enum.KeyCode.Unknown then
                 currentKey = input.KeyCode
@@ -1203,7 +1222,6 @@ function Section:AddKeybind(text, defaultKey, callback, opts)
         end)
     end)
 
-    if not IS_MOBILE then
     UIS.InputBegan:Connect(function(input, gp)
         if gp or waiting then return end
         if input.KeyCode == currentKey then
@@ -1400,7 +1418,7 @@ function Section:AddColorPicker(text, defaultColor, callback, opts)
     end
 
     svFrame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
             svDragging = true
             UpdateSV(input)
         end
@@ -1415,7 +1433,7 @@ function Section:AddColorPicker(text, defaultColor, callback, opts)
     end
 
     hueSlider.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
             hueDragging = true
             UpdateHue(input)
         end
@@ -1429,7 +1447,7 @@ function Section:AddColorPicker(text, defaultColor, callback, opts)
     end)
 
     UIS.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
             svDragging = false
             hueDragging = false
         end
@@ -1456,73 +1474,5 @@ function Section:AddColorPicker(text, defaultColor, callback, opts)
         Set = Set,
     }
 end
-
-
--- === FLOATING MINIMIZE BUBBLE (MOBILE ONLY) ===
-if IS_MOBILE then
-    local bubbleGui = Instance.new("ScreenGui")
-    bubbleGui.Name = "KaylaUI_Bubble"
-    bubbleGui.ResetOnSpawn = false
-    bubbleGui.Parent = GetGuiParent()
-
-    local bubble = Instance.new("TextButton")
-    bubble.Parent = bubbleGui
-    bubble.Size = UDim2.fromOffset(48, 48)
-    bubble.Position = UDim2.new(1, -70, 0.5, -24)
-    bubble.Text = "K"
-    bubble.Font = KaylaUI.Theme.Font
-    bubble.TextSize = 18
-    bubble.BackgroundColor3 = KaylaUI.Theme.Accent
-    bubble.TextColor3 = KaylaUI.Theme.Background
-    bubble.BorderSizePixel = 0
-    bubble.Visible = false
-    Instance.new("UICorner", bubble)
-
-    local dragging, dragStart, startPos = false
-
-    bubble.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = bubble.Position
-        end
-    end)
-
-    UIS.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.Touch then
-            local delta = input.Position - dragStart
-            bubble.Position = UDim2.new(
-                startPos.X.Scale, startPos.X.Offset + delta.X,
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y
-            )
-        end
-    end)
-
-    UIS.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
-        end
-    end)
-
-    bubble.MouseButton1Click:Connect(function()
-        for _, win in ipairs(KaylaUI._Windows) do
-            win:SetVisible(true)
-        end
-        bubble.Visible = false
-    end)
-
-    -- hook window visibility
-    task.spawn(function()
-        while task.wait(0.2) do
-            local anyVisible = false
-            for _, win in ipairs(KaylaUI._Windows) do
-                if win._Visible then anyVisible = true end
-            end
-            bubble.Visible = not anyVisible
-        end
-    end)
-end
--- === END FLOATING BUBBLE ===
-
 
 return KaylaUI
