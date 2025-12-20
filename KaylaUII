@@ -1475,8 +1475,6 @@ function Section:AddColorPicker(text, defaultColor, callback, opts)
     }
 end
 
-return KaylaUI
-
 task.spawn(function()
     repeat task.wait() until Kayla_GetDevice
 
@@ -1550,4 +1548,4 @@ task.spawn(function()
     hookWindows()
 end)
 
-
+return KaylaUI
