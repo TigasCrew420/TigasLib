@@ -1,8 +1,6 @@
 local UIS = game:GetService("UserInputService")
-
 local __KAYLA_IS_MOBILE = UIS.TouchEnabled and not UIS.KeyboardEnabled and not UIS.MouseEnabled
 local __KAYLA_DEVICE_OVERRIDE = nil
-
 local function Kayla_GetDevice()
     if __KAYLA_DEVICE_OVERRIDE then
         return __KAYLA_DEVICE_OVERRIDE
@@ -1475,6 +1473,8 @@ function Section:AddColorPicker(text, defaultColor, callback, opts)
     }
 end
 
+--// KAYLAUI MOBILE UI ENHANCEMENTS (NON-DESTRUCTIVE)
+
 task.spawn(function()
     repeat task.wait() until Kayla_GetDevice
 
@@ -1547,5 +1547,7 @@ task.spawn(function()
     task.wait(1)
     hookWindows()
 end)
+
+--// END MOBILE ENHANCEMENTS
 
 return KaylaUI
